@@ -1,10 +1,11 @@
 from tkinter import *
 from PIL import ImageTk, Image
 from PIL import ImageFilter
-from PIL import sys
+import sys
 
 from tkinter import filedialog
-import math#  --onefile BMPConverter.py
+import math
+#  --onefile BMPConverter.py
 # a tool to convert an image to SYSTEM VERILOG bitmap for Lab1 projects
 # writen by Noam and DAvid Bar-On  for the elementary lab in the Technion IIT 2021
 # (c) Technion IIT 2021
@@ -14,11 +15,17 @@ global imgOriginal   # original size image
 global imgBMP # converted and pixelized image
 global FileName  # bare file name- without paty and extensions"
 global root
+global bitsR, bitsG, bitsB, bits
+bitsR = 8
+bitsG = 8
+bitsB = 8
+bits = bitsR + bitsG + bitsB
 
 # scales parameters
 global bmpScale
 global Rlambda, Glambda, Blambda  # color correcting coefficients
 global grayThreshold
+global Rbits, Gbits, Bbits  # number of bits for each color
 
 # button parameters
 global SingleBitBitMap #  select: one or eight bits
@@ -92,8 +99,9 @@ def selectmouse(v):
 def OpenGUIKeys():
     global bmpScale, ResizeScale
     global Rlambda, Glambda, Blambda  # color correcting coefficients
+    global Rbits, Gbits, Bbits  # number of bits for each color
     global OneBitbutton
-    global grayThreshold
+    global grayThreshold, Threshold_Label
     global InvertGrayScalebutton
 
     # sliders
@@ -106,9 +114,11 @@ def OpenGUIKeys():
     ResizeScale.place(x=0, y=250)
 
     # gray scale controls
-    grayThreshold = Scale(root, from_=0, to=256, label="off", variable=IntVar(), command=picModify)
+    grayThreshold = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
     grayThreshold.set(256)
     grayThreshold.place(x=550, y=350)
+    Threshold_Label = Label(root, text="      off")
+    Threshold_Label.place(x=550, y=470)
 
     InvertGrayScalebutton = Button(root, text="            ", command=InvertSelect)
     InvertGrayScalebutton.place(x=550, y=500)
@@ -125,6 +135,20 @@ def OpenGUIKeys():
     Blambda = Scale(root, from_=0, to=200, label="            B", orient=HORIZONTAL, variable=IntVar(), command=picModify)
     Blambda.set(100)
     Blambda.place(x=400, y=430)
+
+    # Number of bits for RGB
+    bitsXpos = 650
+    Rbits = Scale(root, from_=1, to=8, label="            R", orient=HORIZONTAL, variable=IntVar(), command=RGBpicModify)
+    Rbits.set(8)
+    Rbits.place(x=bitsXpos, y=310)
+
+    Gbits = Scale(root, from_=1, to=8, label="            G", orient=HORIZONTAL, variable=IntVar(), command=RGBpicModify)
+    Gbits.set(8)
+    Gbits.place(x=bitsXpos, y=370)
+
+    Bbits = Scale(root, from_=1, to=8, label="            B", orient=HORIZONTAL, variable=IntVar(), command=RGBpicModify)
+    Bbits.set(8)
+    Bbits.place(x=bitsXpos, y=430)
 
     #buttons
 
@@ -168,11 +192,23 @@ def OpenGUIKeys():
     SHARPEN_Button = Button(root, text="SHARPEN", command=SharpenKey)
     SHARPEN_Button.place(x=250, y=445)
 
-    OneBitbutton = Button(root, text="8 bit (press for 1 bit)", bg='green', command=SingleBitBitMapSelect)
+    OneBitbutton = Button(root, text="{} bit (press for 1 bit)".format(bits), bg='green', command=SingleBitBitMapSelect)
     OneBitbutton.place(x=50, y=500)
 
     SVFilebutton = Button(root, text="create SV file & exit", bg='light blue', command=writeVerilog)
     SVFilebutton.place(x=300, y=500)
+
+def RGBpicModify(dummy):
+    global bitsR, bitsG, bitsB, bits
+    global OneBitbutton
+
+    #if bitsR < Rbits.get() or bitsG < Gbits.get() or bitsB < Bbits.get():
+    picModify(0)
+    bitsR = Rbits.get()
+    bitsG = Gbits.get()
+    bitsB = Bbits.get()
+    bits = bitsR + bitsG + bitsB
+    OneBitbutton.config(text="{} bit (press for 1 bit)".format(bits))
 
 # ____________________________________________________________________________________________________
 def InvertSelect():
@@ -191,21 +227,21 @@ def InvertSelect():
 
 # ____________________________________________________________________________________________________
 def SingleBitBitMapSelect():
-    # selcet the mode:  8 bit or 1 bit
+    # selcet the mode:  8/12 bit or 1 bit
     global SingleBitBitMap
     global OneBitbutton
-    global grayThreshold
+    global grayThreshold, Threshold_Label
     global  InvertGrayScalebutton
 
     SingleBitBitMap = not SingleBitBitMap
 
     if SingleBitBitMap :
-        OneBitbutton.config(text="1 bit (press for 8 bit)",bg='gray')
-        grayThreshold.config(label="gray Threshold")
+        OneBitbutton.config(text="1 bit (press for {} bit)".format(bits),bg='gray')
+        Threshold_Label.config(text="gray Threshold")
         InvertGrayScalebutton.config (text="invert(off)")
     else :
-        OneBitbutton.config(text="8 bit (press for 1 bit)",bg='green')
-        grayThreshold.config(label="off")
+        OneBitbutton.config(text="{} bit (press for 1 bit)".format(bits),bg='green')
+        Threshold_Label.config(text="      off")
         InvertGrayScalebutton.config(text="            ")
     picModify(0)
 
@@ -232,13 +268,80 @@ def OriginalpicDisplay():
 
 # ____________________________________________________________________________________________________
 def writeVerilog():
-    verilogText1 ="// bitmap file \n// (c) Technion IIT, Department of Electrical Engineering 2021 \n// generated bythe automatic Python tool \n \n \n"
-    verilogText2 ="\n					input	logic	clk, \n					input	logic	resetN, \n					input logic	[10:0] offsetX,// offset from top left  position \n					input logic	[10:0] offsetY, \n					input	logic	InsideRectangle, //input that the pixel is within a bracket \n \n					output	logic	drawingRequest, //output that the pixel should be dispalyed \n					output	logic	[7:0] RGBout,  //rgb value from the bitmap \n					output	logic	[3:0] HitEdgeCode //one bit per edge \n ) ; \n \n \n// generating the bitmap \n"
-    verilogText3 ='\nlocalparam logic [7:0] TRANSPARENT_ENCODING = 8\'h00 ;// RGB value in the bitmap representing a transparent pixel '
-    verilogText3A = '\nlocalparam logic [7:0] COLOR_ENCODING = 8\'hFF ;// RGB value in the bitmap representing the BITMAP coolor'
-    verilogText4 ="\n \n \n//////////--------------------------------------------------------------------------------------------------------------= \n//hit bit map has one bit per edge:  hit_colors[3:0] =   {Left, Top, Right, Bottom}	 \n//there is one bit per edge, in the corner two bits are set  \n logic [0:3] [0:3] [3:0] hit_colors = \n		   {16'hC446,     \n			16'h8C62,    \n			16'h8932, \n			16'h9113}; \n // pipeline (ff) to get the pixel color from the array 	 \n//////////--------------------------------------------------------------------------------------------------------------= \nalways_ff@(posedge clk or negedge resetN) \nbegin \n	if(!resetN) begin \n		RGBout <=	8'h00; \n		HitEdgeCode <= 4'h0; \n	end \n	else begin \n		RGBout <= TRANSPARENT_ENCODING ; // default  \n		HitEdgeCode <= 4'h0; \n \n		if (InsideRectangle == 1'b1 ) \n		begin // inside an external bracket "
-    verilogText5 ="\n			RGBout <= (object_colors[offsetY][offsetX] ==  1 ) ? COLOR_ENCODING  : TRANSPARENT_ENCODING; \n		end  	 \n		 \n	end \nend \n \n//////////--------------------------------------------------------------------------------------------------------------= \n// decide if to draw the pixel or not \nassign drawingRequest = (RGBout != TRANSPARENT_ENCODING ) ? 1'b1 : 1'b0 ; // get optional transparent command from the bitmpap   \n \nendmodule"
-    verilogText5A = "\n			RGBout <= object_colors[offsetY][offsetX]; \n		end  	 \n		 \n	end \nend \n \n//////////--------------------------------------------------------------------------------------------------------------= \n// decide if to draw the pixel or not \nassign drawingRequest = (RGBout != TRANSPARENT_ENCODING ) ? 1'b1 : 1'b0 ; // get optional transparent command from the bitmpap   \n \nendmodule"
+    verilogText1 = """
+// bitmap file
+// (c) Technion IIT, Department of Electrical Engineering 2021
+// generated bythe automatic Python tool
+
+
+"""
+    verilogText2 ="""
+					input	logic	clk,
+					input	logic	resetN,
+					input logic	[10:0] offsetX,
+// offset from top left  position
+					input logic	[10:0] offsetY,
+					input	logic	InsideRectangle, //input that the pixel is within a bracket
+
+
+					output	logic	drawingRequest, //output that the pixel should be dispalyed
+					output	logic	[{}:0] RGBout,  //rgb value from the bitmap
+					output	logic	[3:0] HitEdgeCode //one bit per edge
+);
+
+
+// generating the bitmap
+""".format(bits-1)
+    verilogText3 ="""
+localparam logic [{}:0] TRANSPARENT_ENCODING = {}'h0 ;// RGB value in the bitmap representing a transparent pixel""".format(bits-1, bits)
+    verilogText3A = """
+localparam logic [{}:0] COLOR_ENCODING = {}'h{} ;// RGB value in the bitmap representing the BITMAP color""".format(bits-1, bits, hex(1<<bits - 1)[2:])
+    verilogText4 ="""
+
+
+//////////--------------------------------------------------------------------------------------------------------------=
+//hit bit map has one bit per edge:  hit_colors[3:0] =   {Left, Top, Right, Bottom}
+//there is one bit per edge, in the corner two bits are set
+logic [0:3] [0:3] [3:0] hit_colors =
+		   {16'hC446,
+			16'h8C62,
+			16'h8932,
+			16'h9113};
+// pipeline (ff) to get the pixel color from the array
+//////////--------------------------------------------------------------------------------------------------------------=
+always_ff@(posedge clk or negedge resetN)
+begin
+	if(!resetN) begin
+		RGBout <=	8'h00;
+		HitEdgeCode <= 4'h0;
+	end
+	else begin
+		RGBout <= TRANSPARENT_ENCODING ; // default
+		HitEdgeCode <= 4'h0;
+
+		if (InsideRectangle == 1'b1 )
+		begin // inside an external bracket
+"""
+    verilogText5 ="""
+			RGBout <= (object_colors[offsetY][offsetX] ==  1 ) ? COLOR_ENCODING  : TRANSPARENT_ENCODING;
+		end
+	end
+end
+
+//////////--------------------------------------------------------------------------------------------------------------=
+// decide if to draw the pixel or not
+assign drawingRequest = (RGBout != TRANSPARENT_ENCODING ) ? 1'b1 : 1'b0 ; // get optional transparent command from the bitmap
+endmodule"""
+    verilogText5A = """
+			RGBout <= object_colors[offsetY][offsetX];
+		end
+	end
+end
+
+//////////--------------------------------------------------------------------------------------------------------------=
+// decide if to draw the pixel or not
+assign drawingRequest = (RGBout != TRANSPARENT_ENCODING ) ? 1'b1 : 1'b0 ; // get optional transparent command from the bitmap
+endmodule"""
 
     pixels = imgBMP.load()
     width, height = imgBMP.size
@@ -251,9 +354,9 @@ def writeVerilog():
         file1.write(verilogText3A)
     file1.write(verilogText3 + " \n")
     if (SingleBitBitMap):
-        file1.write("logic[0:"+ str (height-1 ) + "][0:" + str (width -1) + "] object_colors = {")
+        file1.write("logic[0:{}][0:] object_colors = {{".format(height-1, width-1))
     else:
-        file1.write("logic[0:" + str(height - 1) + "][0:" + str(width - 1) + "][7:0] object_colors = {")
+        file1.write("logic[0:{}][0:][{}:0] object_colors = {{".format(height-1, width-1, bits-1))
     for j in range(height):  # for each column
         if (SingleBitBitMap):
             file1.write("\n\t" + str(width) + "'b")
@@ -271,15 +374,15 @@ def writeVerilog():
         else:
             file1.write("\n\t{")
             for i in range(width):  # For each row
-                #RRRGGGBB
-             #   ColorByte=int((pixels[i, j][0]/32)+(pixels[i, j][1]/8)+(pixels[i, j][2])) #  sum the three colors to a BYTE
-                red1  =  int(pixels[i,j][0] /32) * 32
-                green1 = int(pixels[i,j][1] /32) * 4
-                blue1 =  int(pixels[i,j][2] /64) * 1
+                #R...RG...GB...B (determined by bitsR, bitsG, bitsB)
+                #   ColorByte=int((pixels[i, j][0]/32)+(pixels[i, j][1]/8)+(pixels[i, j][2])) #  sum the three colors to a BYTE
+                red1  =  int(pixels[i,j][0] /(1<<(8-bitsR))) * (1<<(bitsG+bitsB))
+                green1 = int(pixels[i,j][1] /(1<<(8-bitsG))) * (1<<bitsB)
+                blue1 =  int(pixels[i,j][2] /(1<<(8-bitsB))) * 1
 
                 ColorByte=  red1 + green1 + blue1  # sum the three colors to a BYTE
-                file1.write("8'h")
-                file1.write(format(ColorByte, '02x'))
+                file1.write("{}'h".format(bits))
+                file1.write(format(ColorByte, '0{}x'.format(math.ceil(bits/4)))) # 4 bits/hex digit, rounded up
                 if i < (width -1) :
                     file1.write(",")
             file1.write("}")
@@ -312,11 +415,15 @@ def writeVerilog():
 
 def ResetToOriginal():
     global imgOriginal,Rlambda,Glambda,Blambda
+    global Rbits, Gbits, Bbits
     imgOriginal = imgFromFile.resize(imgOriginal.size, Image.NEAREST)
 
     Rlambda.set(100)
     Glambda.set(100)
     Blambda.set(100)
+    Rbits.set(8)
+    Gbits.set(8)
+    Bbits.set(8)
     picModify(0)
     OriginalpicDisplay()
 
@@ -486,10 +593,13 @@ def picModify(v):
     #r = r.point(lambda i: math.floor(math.floor(i * Rlambda.get() / 100.0 )/ 64 )* 64)
     #g = g.point(lambda i: math.floor(math.floor(i * Glambda.get() / 100.0 )/ 64 )* 64)
     #b = b.point(lambda i: math.floor(math.floor(i * Blambda.get() / 100.0 )/ 128 )* 128)
+    r_step = 1 << (8 - Rbits.get())
+    g_step = 1 << (8 - Gbits.get())
+    b_step = 1 << (8 - Bbits.get())
 
-    r = r.point(lambda i: int(int(i * Rlambda.get() / 100.0 )/ 64 )* 64)
-    g = g.point(lambda i: int(int(i * Glambda.get() / 100.0 )/ 64 )* 64)
-    b = b.point(lambda i: int(int(i * Blambda.get() / 100.0 )/ 64 )* 64)
+    r = r.point(lambda i: int(int(i * Rlambda.get() / 100.0 )/ r_step )* r_step)
+    g = g.point(lambda i: int(int(i * Glambda.get() / 100.0 )/ g_step )* g_step)
+    b = b.point(lambda i: int(int(i * Blambda.get() / 100.0 )/ b_step )* b_step)
 
 
     # Recombine back to RGB image
