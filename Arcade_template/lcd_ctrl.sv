@@ -442,15 +442,15 @@ always_ff @(posedge clk_25)
 // RGB state machine
 
 enum int unsigned { 
-	RGB_IDLE 		= 0, 
-	RGB_WAIT_START	= 2,
-	RGB_DATA_1_d	= 4,
-	RGB_DATA_1_u	= 8,
-	RGB_DATA_2_d	= 16,
-	RGB_DATA_2_u	= 32,
-	RGB_WAIT_NEXT_LINE = 64,
-	STUCK					= 128,
-	RGB_WAIT_NEXT_FRAME = 256
+	RGB_IDLE, 
+	RGB_WAIT_START,
+	RGB_DATA_1_d,
+	RGB_DATA_1_u,
+	RGB_DATA_2_d,
+	RGB_DATA_2_u,
+	RGB_WAIT_NEXT_LINE,
+	STUCK,
+	RGB_WAIT_NEXT_FRAME
 	} rgb_state, rgb_next_state;
 	
 always_comb 
@@ -460,10 +460,10 @@ always_comb
 		rgb_data_2 = 0;
 		rgb_lcd_wr = 1;
 		rgb_lcd_d_c = 0;
-		case(rgb_state)
+		case(1'b1)
 
 			
-			RGB_IDLE: begin
+			rgb_state[RGB_IDLE]: begin
 							
 							if (rgb_on == 1) begin
 								rgb_next_state = RGB_WAIT_START;
@@ -475,7 +475,7 @@ always_comb
 								end
 							end
 					
-			RGB_WAIT_START: begin
+			rgb_state[RGB_WAIT_START]: begin
 									
 									if (first_pixle == 1) begin
 										rgb_lcd_d_c = 1;
@@ -489,7 +489,7 @@ always_comb
 									end
 								end
 								
-			RGB_DATA_1_d: begin
+			rgb_state[RGB_DATA_1_d]: begin
 							
 							rgb_lcd_d_c = 1;
 							rgb_next_state = RGB_DATA_1_u;
@@ -499,7 +499,7 @@ always_comb
 							
 						end
 						
-			RGB_DATA_1_u: begin
+			rgb_state[RGB_DATA_1_u]: begin
 							
 							rgb_lcd_d_c = 1;
 							rgb_lcd_wr = 1;
@@ -507,7 +507,7 @@ always_comb
 							rgb_next_state = RGB_DATA_2_d;
 						end
 			
-			RGB_DATA_2_d: begin
+			rgb_state[RGB_DATA_2_d]: begin
 							rgb_lcd_d_c = 1;
 							rgb_next_state = RGB_DATA_2_u;
 							rgb_data_2 = 1;
@@ -515,7 +515,7 @@ always_comb
 							//add_next = 1;
 						end
 			
-			RGB_DATA_2_u: begin
+			rgb_state[RGB_DATA_2_u]: begin
 								rgb_lcd_d_c = 1;
 								rgb_lcd_wr = 1;	
 								rgb_data_2 = 1;
@@ -535,7 +535,7 @@ always_comb
 								
 							end
 	
-			RGB_WAIT_NEXT_LINE: begin
+			rgb_state[RGB_WAIT_NEXT_LINE]: begin
 										rgb_lcd_d_c = 1;
 										rgb_data_1 = 1;
 										if (first_line == 1) begin
@@ -547,7 +547,7 @@ always_comb
 											end
 										end
 										
-			RGB_WAIT_NEXT_FRAME: begin
+			rgb_state[RGB_WAIT_NEXT_FRAME]: begin
 										rgb_lcd_d_c = 1;
 										rgb_data_1 = 1;
 										if (first_pixle == 1) begin
@@ -559,7 +559,7 @@ always_comb
 											end
 										end
 										
-			STUCK: rgb_next_state = STUCK;
+			rgb_state[STUCK]: rgb_next_state = STUCK;
 			
 			default: 
 				begin
