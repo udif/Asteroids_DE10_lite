@@ -1,0 +1,126 @@
+Restore Archived Project report for lcd-working
+Mon Oct 31 23:03:30 2022
+Quartus Prime Version 21.1.1 Build 850 06/23/2022 SJ Lite Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Restore Archived Project Summary
+  3. Restore Archived Project Messages
+  4. Files Restored
+  5. Files Not Restored
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2022  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details, at
+https://fpgasoftware.intel.com/eula.
+
+
+
++-------------------------------------------------------------------------+
+; Restore Archived Project Summary                                        ;
++---------------------------------+---------------------------------------+
+; Restore Archived Project Status ; Successful - Mon Oct 31 23:03:30 2022 ;
+; Revision Name                   ; lcd-working                           ;
+; Top-level Entity Name           ; Top_template                          ;
+; Family                          ; MAX 10                                ;
++---------------------------------+---------------------------------------+
+
+
++-----------------------------------+
+; Restore Archived Project Messages ;
++-----------------------------------+
+Info: Successfully restored 'C:/Sync/Sync/git/VGAstarter_DE10_lite/Arcade_template.qar' into the 'C:/Sync/Sync/git/VGAstarter_DE10_lite/Arcade_template/' directory
+Info: Generated report 'lcd-working.restore.rpt'
+Info (23030): Evaluation of Tcl script c:/intelfpga_lite/21.1/quartus/common/tcl/apps/qpm/qar.tcl was successful
+Info: Quartus Prime Shell was successful. 0 errors, 2 warnings
+    Info: Peak virtual memory: 4850 megabytes
+    Info: Processing ended: Mon Oct 31 23:03:30 2022
+    Info: Elapsed time: 00:00:00
+    Info: Total CPU time (on all processors): 00:00:01
+
+
++-------------------------------------------------------------------+
+; Files Restored                                                    ;
++-------------------------------------------------------------------+
+; File Name                                                         ;
++-------------------------------------------------------------------+
+; qar_info.json                                                     ;
+; Draw_Ghost.sv                                                     ;
+; Draw_Intel.sv                                                     ;
+; Drawing_priority.sv                                               ;
+; Ghost_unit.sv                                                     ;
+; Intel_unit.sv                                                     ;
+; Move_Ghost.sv                                                     ;
+; Move_Intel.sv                                                     ;
+; Screens_dispaly.sv                                                ;
+; Top_template.sv                                                   ;
+; adc.qsys                                                          ;
+; adc.sopcinfo                                                      ;
+; adc/adc.cmp                                                       ;
+; adc/synthesis/adc.debuginfo                                       ;
+; adc/synthesis/adc.qip                                             ;
+; adc/synthesis/adc.v                                               ;
+; adc/synthesis/submodules/DE10_Lite_ADC_Core_modular_adc_0.v       ;
+; adc/synthesis/submodules/adc_adc_0.v                              ;
+; adc/synthesis/submodules/altera_modular_adc_control.v             ;
+; adc/synthesis/submodules/altera_modular_adc_control_avrg_fifo.v   ;
+; adc/synthesis/submodules/altera_modular_adc_control_fsm.v         ;
+; adc/synthesis/submodules/altera_modular_adc_sample_store.v        ;
+; adc/synthesis/submodules/altera_modular_adc_sample_store_ram.v    ;
+; adc/synthesis/submodules/altera_modular_adc_sequencer.v           ;
+; adc/synthesis/submodules/altera_modular_adc_sequencer_csr.v       ;
+; adc/synthesis/submodules/altera_modular_adc_sequencer_ctrl.v      ;
+; adc/synthesis/submodules/altera_reset_controller.sdc              ;
+; adc/synthesis/submodules/altera_reset_controller.v                ;
+; adc/synthesis/submodules/altera_reset_synchronizer.v              ;
+; adc/synthesis/submodules/altera_up_avalon_adv_adc.v               ;
+; adc/synthesis/submodules/chsel_code_converter_sw_to_hw.v          ;
+; adc/synthesis/submodules/fiftyfivenm_adcblock_primitive_wrapper.v ;
+; adc/synthesis/submodules/fiftyfivenm_adcblock_top_wrapper.v       ;
+; analog_input.sv                                                   ;
+; assignment_defaults.qdf                                           ;
+; lcd-working.qsf                                                   ;
+; lcd_cmd.qip                                                       ;
+; lcd_cmd.v                                                         ;
+; lcd_cmd_bb.v                                                      ;
+; lcd_cmd_inst.v                                                    ;
+; lcd_connect.qsf                                                   ;
+; lcd_ctrl.sv                                                       ;
+; my_cpu.qpf                                                        ;
+; periphery_control.sv                                              ;
+; pll25.ppf                                                         ;
+; pll25.qip                                                         ;
+; pll25.v                                                           ;
+; pll25_bb.v                                                        ;
+; pll25_inst.v                                                      ;
+; seven_segment.sv                                                  ;
+; text_lcd_cmd.mif                                                  ;
+; vga_controller.v                                                  ;
++-------------------------------------------------------------------+
+
+
++--------------------+
+; Files Not Restored ;
++--------------------+
+; File Name          ;
++--------------------+
+
+

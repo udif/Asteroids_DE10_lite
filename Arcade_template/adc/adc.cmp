@@ -1,0 +1,13 @@
+	component adc is
+		port (
+			adc_slave_write       : in  std_logic                     := 'X';             -- write
+			adc_slave_readdata    : out std_logic_vector(31 downto 0);                    -- readdata
+			adc_slave_writedata   : in  std_logic_vector(31 downto 0) := (others => 'X'); -- writedata
+			adc_slave_address     : in  std_logic_vector(2 downto 0)  := (others => 'X'); -- address
+			adc_slave_waitrequest : out std_logic;                                        -- waitrequest
+			adc_slave_read        : in  std_logic                     := 'X';             -- read
+			clk_clk               : in  std_logic                     := 'X';             -- clk
+			reset_reset_n         : in  std_logic                     := 'X'              -- reset_n
+		);
+	end component adc;
+
