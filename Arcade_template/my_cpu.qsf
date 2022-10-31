@@ -19,7 +19,7 @@
 #
 # Quartus Prime
 # Version 21.1.1 Build 850 06/23/2022 SJ Lite Edition
-# Date created = 23:03:30  October 31, 2022
+# Date created = 01:00:32  October 27, 2022
 #
 # -------------------------------------------------------------------------- #
 #
@@ -41,5 +41,5 @@ set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE AUTO
 set_global_assignment -name TOP_LEVEL_ENTITY my_cpu
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 21.1.1
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "23:03:30  OCTOBER 31, 2022"
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "01:00:32  OCTOBER 27, 2022"
 set_global_assignment -name LAST_QUARTUS_VERSION "21.1.1 Lite Edition"

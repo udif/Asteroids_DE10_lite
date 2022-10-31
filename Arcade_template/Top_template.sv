@@ -189,7 +189,9 @@ assign VGA_B = vga_b_wire;
 
 
 // Screens control (LCD and VGA)
-Screens_dispaly Screen_control(
+Screens_dispaly #(
+	.RGB_LAT(1)
+) Screen_control(
 	.clk_25(clk_25),
 	.clk_100(clk_100),
 	.Red_level(Red_level),

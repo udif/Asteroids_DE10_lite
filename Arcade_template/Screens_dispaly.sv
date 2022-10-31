@@ -4,7 +4,9 @@
 
 
 
-module Screens_dispaly (
+module Screens_dispaly # (
+	parameter RGB_LAT = 0
+) (
 	
 	input					clk_25,
 	input					clk_100,
@@ -32,12 +34,15 @@ module Screens_dispaly (
 	wire	[31:0]	Pxl_x_i;
 	wire	[31:0]	Pxl_y_i;
 	
+	wire h_sync_d;
+	wire v_sync_d;
+
 // VGA controller
  vga_controller VGA_interface (
 	.pixel_clk  (clk_25),
    .reset_n    (1),
-   .h_sync     (h_sync),
-   .v_sync     (v_sync),
+   .h_sync     (h_sync_d),
+   .v_sync     (v_sync_d),
    .disp_ena   (disp_ena),
    .column     (Pxl_x_i),
    .row        (Pxl_y_i)
@@ -77,4 +82,26 @@ assign Red = Red_i;
 assign Green = Green_i;
 assign Blue = Blue_i;
 
+// delay h/v sync as requested
+generate
+if (RGB_LAT == 0)
+begin
+	assign h_sync = h_sync_d;
+	assign v_sync = v_sync_d;
+end
+else
+begin
+	reg [RGB_LAT-1:0]h_dly;
+	reg [RGB_LAT-1:0]v_dly;
+	wire [RGB_LAT:0]tmp_h = {h_sync_d, h_dly};
+	wire [RGB_LAT:0]tmp_v = {v_sync_d, v_dly};
+	always @(posedge clk_25)
+	begin
+		h_dly <= tmp_h[RGB_LAT:1];
+		v_dly <= tmp_v[RGB_LAT:1];
+	end
+	assign h_sync = h_dly[0];
+	assign v_sync = v_dly[0];
+end
+endgenerate
 endmodule
