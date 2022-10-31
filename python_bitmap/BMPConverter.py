@@ -198,6 +198,9 @@ def OpenGUIKeys():
     SVFilebutton = Button(root, text="create SV file & exit", bg='light blue', command=writeVerilog)
     SVFilebutton.place(x=300, y=500)
 
+    MIFFilebutton = Button(root, text="create MIF file", bg='light blue', command=writeMif)
+    MIFFilebutton.place(x=300, y=550)
+
 def RGBpicModify(dummy):
     global bitsR, bitsG, bitsB, bits
     global OneBitbutton
@@ -320,8 +323,58 @@ def writeVerilog():
     outJPGFile = open(FileName + "_piexl.jpg", "w")
     imgBMP.save(outJPGFile)
 
-
     sys.exit()
+
+# ____________________________________________________________________________________________________
+def writeMif():
+    pixels = imgBMP.load()
+    width, height = imgBMP.size
+    OneBitPixelCode = (255, 0, 0)
+    file1 = open(FileName + "BitMap.mif", "w")
+
+    file1.write("""
+--
+-- Generated automatically by BMPConverter.py
+--
+DEPTH = {};
+WIDTH = {};
+ADDRESS_RADIX = HEX;
+DATA_RADIX = HEX;
+CONTENT BEGIN
+""".format(width*height, bits))
+    digits = ((width*height-1).bit_length()+3)//4
+    for j in range(height):  # for each column
+        for i in range(width):  # For each row
+            file1.write("{}: ".format(hex(j*height+i)[2:].upper().zfill(digits)))
+            if (SingleBitBitMap):
+                #BW
+                if (pixels[i,j] == OneBitPixelCode) :
+                    file1.write('1;\n')
+                    pixels[i, j] = (255, 255, 255)
+                else:
+                    file1.write('0;\n')
+                    pixels[i, j] = (0, 0, 0)
+            else:
+                #R...RG...GB...B (determined by bitsR, bitsG, bitsB)
+                #   ColorByte=int((pixels[i, j][0]/32)+(pixels[i, j][1]/8)+(pixels[i, j][2])) #  sum the three colors to a BYTE
+                red1  =  int(pixels[i,j][0] /(1<<(8-bitsR))) * (1<<(bitsG+bitsB))
+                green1 = int(pixels[i,j][1] /(1<<(8-bitsG))) * (1<<bitsB)
+                blue1 =  int(pixels[i,j][2] /(1<<(8-bitsB))) * 1
+
+                ColorByte=  red1 + green1 + blue1  # sum the three colors to a BYTE
+                file1.write(hex(ColorByte)[2:].upper().zfill((bits+3)//4)+";\n") # 4 bits/hex digit, rounded up
+    file1.write("END;\n")
+    xBitsDiv = str( math.trunc(math.log(width +1 )  / math.log( 2 ) ) -2 ) # add one to r0und up math errors  -2  to reach the  4*4
+    yBitsDiv = str( math.trunc(math.log(height +1 )  / math.log( 2 ) ) -2 )
+
+    file1.close()
+
+
+    # write BMP for additional editing
+
+    outJPGFile = open(FileName + "_piexl.jpg", "w")
+    imgBMP.save(outJPGFile)
+
 
 # --------------------------------------------
 
