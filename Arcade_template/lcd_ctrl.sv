@@ -94,40 +94,39 @@ always_comb begin
 end
 	
 enum int unsigned { 
-	HOLD 			= 0, 
-	
-	CMD_1_d		= 32'h00_00_00_02,
-	CMD_1_u		= 4,
-	CMD_2_d		= 8,
-	CMD_2_u		= 16,
-	DATA_1_d		= 32,
-	DATA_1_u		= 64,
-	DATA_2_d		= 128,
-	DATA_2_u		= 256,
-	DELAY_1		= 512,
-	IDLE			= 1024,
-//	CMD_3_d		= 1024,
-//	CMD_3_u		= 2048,
-//	CMD_4_d		= 4096,
-//	CMD_4_u		= 8192,
-	CMD_5_d		= 16384,
-	CMD_5_u		= 32768,
-	CMD_6_d		= 65536,
-	CMD_6_u		= 131072,
-	DELAY_2		= 262144,
-	RGB_CMD_1_d = 524288,
-	RGB_CMD_1_u = 1048576,
-	RGB_CMD_2_d	= 2097152,
-	RGB_CMD_2_u	= 4194304,
-	RGB_wait		= 8388608,
-	CMD_e_1_d	= 32'h01_00_00_00,
-	CMD_e_1_u	= 32'h02_00_00_00,
-	CMD_e_2_d	= 32'h04_00_00_00,
-	CMD_e_2_u	= 32'h08_00_00_00,
-	DATA_e_1_d	= 32'h10_00_00_00,
-	DATA_e_1_u	= 32'h20_00_00_00,
-	DATA_e_2_d	= 32'h40_00_00_00,
-	DATA_e_2_u	= 32'h80_00_00_00
+	HOLD, 
+	CMD_1_d,
+	CMD_1_u,
+	CMD_2_d,
+	CMD_2_u,
+	DATA_1_d,
+	DATA_1_u,
+	DATA_2_d,
+	DATA_2_u,
+	DELAY_1,
+	IDLE,
+//	CMD_3_d,
+//	CMD_3_u,
+//	CMD_4_d,
+//	CMD_4_u,
+	CMD_5_d,
+	CMD_5_u,
+	CMD_6_d,
+	CMD_6_u,
+	DELAY_2,
+	RGB_CMD_1_d,
+	RGB_CMD_1_u,
+	RGB_CMD_2_d,
+	RGB_CMD_2_u,
+	RGB_wait,
+	CMD_e_1_d,
+	CMD_e_1_u,
+	CMD_e_2_d,
+	CMD_e_2_u,
+	DATA_e_1_d,
+	DATA_e_1_u,
+	DATA_e_2_d,
+	DATA_e_2_u
 	} state, next_state;
 	
 always_comb 
@@ -140,9 +139,9 @@ always_comb
 		cmd_lcd_d_c = 0;
 		lcd_reset = 1;
 		rgb_on = 0;
-		case(state)
+		case(1'b1)
 			
-			HOLD: begin
+			state[HOLD]: begin
 						if (sw_0 == 1) begin
 							next_state = IDLE;
 							add_init = 1;
@@ -154,7 +153,7 @@ always_comb
 						end
 					end
 			
-			IDLE: begin
+			state[IDLE]: begin
 						if (count != 20000000) begin
 							next_state = IDLE;
 							add_init = 1;
@@ -168,28 +167,28 @@ always_comb
 						end
 					end
 			
-			CMD_1_d: begin
+			state[CMD_1_d]: begin
 							//lcd_d_c = 1;
 							next_state = CMD_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			CMD_1_u: begin
+			state[CMD_1_u]: begin
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
 							next_state = CMD_2_d;
 						end
 			
-			CMD_2_d: begin			
+			state[CMD_2_d]: begin			
 							//lcd_d_c = 1;
 							next_state = CMD_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			CMD_2_u: begin
+			state[CMD_2_u]: begin
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h60E) begin
@@ -203,14 +202,14 @@ always_comb
 						 end
 						 
 			
-			DATA_1_d: begin
+			state[DATA_1_d]: begin
 							cmd_lcd_d_c = 1;
 							next_state = DATA_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			DATA_1_u: begin
+			state[DATA_1_u]: begin
 							
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
@@ -218,14 +217,14 @@ always_comb
 							next_state = DATA_2_d;
 						end
 			
-			DATA_2_d: begin
+			state[DATA_2_d]: begin
 							cmd_lcd_d_c = 1;
 							next_state = DATA_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			DATA_2_u: begin
+			state[DATA_2_u]: begin
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
@@ -235,25 +234,25 @@ always_comb
 						 
 			
 			
-//			CMD_3_d: begin
+//			state[CMD_3_d]: begin
 //							next_state = CMD_3_u;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
 						 
-//			CMD_3_u: begin
+//			state[CMD_3_u]: begin
 //							cmd_lcd_wr = 1;
 //							
 //							next_state = CMD_4_d;
 //						 end
 //						 
-//			CMD_4_d: begin
+//			state[CMD_4_d]: begin
 //							next_state = CMD_4_u;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
 //						 
-//			CMD_4_u: begin
+//			state[CMD_4_u]: begin
 //							cmd_lcd_wr = 1;
 //							//add_next = 1;
 //							next_state = DELAY_1;
@@ -262,7 +261,7 @@ always_comb
 						 
 						 
 			
-			DELAY_1: begin
+			state[DELAY_1]: begin
 							//lcd_d_c = 1;
 							if (count != 3000000) begin
 								next_state = DELAY_1;
@@ -273,32 +272,32 @@ always_comb
 								
 							end
 						end
-			CMD_5_d: begin
+			state[CMD_5_d]: begin
 							next_state = CMD_5_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
 						 
-			CMD_5_u: begin
+			state[CMD_5_u]: begin
 							cmd_lcd_wr = 1;
 							
 							next_state = CMD_6_d;
 						 end
 						 
-			CMD_6_d: begin
+			state[CMD_6_d]: begin
 							next_state = CMD_6_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
 						 
-			CMD_6_u: begin
+			state[CMD_6_u]: begin
 							cmd_lcd_wr = 1;
 							//add_next = 1;
 							next_state = DELAY_2;
 							count_start = 1;
 						 end
 			
-			DELAY_2: begin
+			state[DELAY_2]: begin
 							cmd_lcd_d_c = 1;
 							if (count != 3000000) begin
 								next_state = DELAY_2;
@@ -310,28 +309,28 @@ always_comb
 						end	
 						
 			///////
-			CMD_e_1_d: begin
+			state[CMD_e_1_d]: begin
 							//lcd_d_c = 1;
 							next_state = CMD_e_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			CMD_e_1_u: begin
+			state[CMD_e_1_u]: begin
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
 							next_state = CMD_e_2_d;
 						end
 			
-			CMD_e_2_d: begin			
+			state[CMD_e_2_d]: begin			
 							//lcd_d_c = 1;
 							next_state = CMD_e_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			CMD_e_2_u: begin
+			state[CMD_e_2_u]: begin
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h636) begin
@@ -345,14 +344,14 @@ always_comb
 						 end
 						 
 			
-			DATA_e_1_d: begin
+			state[DATA_e_1_d]: begin
 							cmd_lcd_d_c = 1;
 							next_state = DATA_e_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			DATA_e_1_u: begin
+			state[DATA_e_1_u]: begin
 							
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
@@ -360,14 +359,14 @@ always_comb
 							next_state = DATA_e_2_d;
 						end
 			
-			DATA_e_2_d: begin
+			state[DATA_e_2_d]: begin
 							cmd_lcd_d_c = 1;
 							next_state = DATA_e_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			DATA_e_2_u: begin
+			state[DATA_e_2_u]: begin
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
@@ -377,31 +376,31 @@ always_comb
 			
 			///////
 				
-			RGB_CMD_1_d: begin
+			state[RGB_CMD_1_d]: begin
 								next_state = RGB_CMD_1_u;
 								add_next = 1;
 								cmd_lcd_wr = 0;
 							end
 						
-			RGB_CMD_1_u: begin
+			state[RGB_CMD_1_u]: begin
 								cmd_lcd_wr = 1;
 								next_state = RGB_CMD_2_d;
 							end
 			
-			RGB_CMD_2_d: begin			
+			state[RGB_CMD_2_d]: begin			
 								next_state = RGB_CMD_2_u;
 								cmd_lcd_wr = 0;
 								//add_next = 1;
 							end
 			
-			RGB_CMD_2_u: begin
+			state[RGB_CMD_2_u]: begin
 			
 							cmd_lcd_wr = 1;	
 							next_state = RGB_wait;
 						 end		
 			
 			
-			RGB_wait: begin
+			state[RGB_wait]: begin
 							next_state = RGB_wait;
 							//count_start = 1;
 							rgb_on = 1;
