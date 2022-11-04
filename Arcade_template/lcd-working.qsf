@@ -435,6 +435,8 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[32]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[33]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[34]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[35]
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name SYSTEMVERILOG_FILE sin_cos.sv
 set_global_assignment -name QIP_FILE adc/synthesis/adc.qip
 set_global_assignment -name VERILOG_FILE vga_controller.v
 set_global_assignment -name SYSTEMVERILOG_FILE seven_segment.sv
@@ -455,4 +457,5 @@ set_global_assignment -name SYSTEMVERILOG_FILE Ghost_unit.sv
 set_global_assignment -name TEXT_FILE Text1.txt
 set_global_assignment -name QIP_FILE ghost.qip
 set_global_assignment -name QIP_FILE intel.qip
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name QIP_FILE mult_add.qip
+set_global_assignment -name QIP_FILE sincos.qip
