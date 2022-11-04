@@ -19,11 +19,31 @@ module sin_cos #(
         .q({sin_data, cos_data})
     );
 
-    logic [1:0] quad;  // quadrant we're in: I, II, III, IV
+    wire [1:0] quad = phase[$clog2(ROM_DEPTH)+2-1:$clog2(ROM_DEPTH)];  // quadrant we're in: I, II, III, IV
     always_comb begin
         // 2nd and 4th quadrants use mirrored data
-        rom_addr = quad[0] ? (ROM_DEPTH - 1) - phase[$clog2(ROM_DEPTH)-1:0] : phase[$clog2(ROM_DEPTH)-1:0];
-        sin_val = (quad == 2 || quad == 3) ? -sin_data : sin_data;
-        cos_val = (quad == 1 || quad == 2) ? -cos_data : cos_data;
+        rom_addr = phase[$clog2(ROM_DEPTH)-1:0];
+        case(quad)
+            2'd0: begin
+                sin_val = sin_data;
+                cos_val = cos_data;
+            end
+            2'd1: begin
+                sin_val =  cos_data;
+                cos_val = -sin_data;
+            end
+            2'd2: begin
+                sin_val = -sin_data;
+                cos_val = -cos_data;
+            end
+            2'd3: begin
+                sin_val = -cos_data;
+                cos_val =  sin_data;
+            end
+            default: begin
+                sin_val = 18'hx;
+                cos_val = 18'hx;
+            end
+        endcase
     end
 endmodule
