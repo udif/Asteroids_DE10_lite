@@ -301,7 +301,7 @@ Ghost_unit  Ghost_unit_inst(
 	.collision(draw_intel && draw_ghost),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.wheel(Wheel[11:2]),
+	.wheel(Wheel),
 	.Red(r_ghost),
 	.Green(g_ghost),
 	.Blue(b_ghost),

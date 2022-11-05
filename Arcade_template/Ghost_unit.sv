@@ -11,7 +11,7 @@ module Ghost_unit (
 	input		collision,
 	input		[31:0]	pxl_x,
 	input		[31:0]	pxl_y,
-	input    [9:0]    wheel,
+	input    [11:0]    wheel,
 	output	[3:0]		Red,
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
@@ -22,6 +22,7 @@ module Ghost_unit (
 	wire	[31:0]	topLeft_y_ghost;
 	wire	ghost_x_direction;
 	
+	wire [17:0]wheel_adjusted = wheel * 6'd34;
 	
 	Move_Ghost move_inst2(
 	.clk(clk),
@@ -43,7 +44,7 @@ Draw_Ghost draw_inst2(
 	.height(9'd64),
 	.offset_x(10'd32),
 	.offset_y(9'd32),
-	.theta(wheel),
+	.theta(wheel_adjusted[16:7]),
 	.Red_level(Red),
 	.Green_level(Green),
 	.Blue_level(Blue),
