@@ -1,4 +1,4 @@
-module rot_tb;
+module test;
 reg clk;
 initial clk = 1'b0;
 
