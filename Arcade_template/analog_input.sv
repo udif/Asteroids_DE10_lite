@@ -31,22 +31,22 @@ adc u0 (
 
 always @(posedge clk) begin
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 0) begin
-		a0 <= adc_read_data;
+		a0 <= adc_read_data[$bits(a0)-1:0];
 	end
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 1) begin
-		a1 <= adc_read_data;
+		a1 <= adc_read_data[$bits(a1)-1:0];
 	end
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 2) begin
-		a2 <= adc_read_data;
+		a2 <= adc_read_data[$bits(a2)-1:0];
 	end
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 3) begin
-		a3 <= adc_read_data;
+		a3 <= adc_read_data[$bits(a3)-1:0];
 	end
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 4) begin
-		a4 <= adc_read_data;
+		a4 <= adc_read_data[$bits(a4)-1:0];
 	end
 	if (adc_read == 1 & adc_wait_request == 0 & adc_address == 5) begin
-		a5 <= adc_read_data;
+		a5 <= adc_read_data[$bits(a5)-1:0];
 	end
 	
 end

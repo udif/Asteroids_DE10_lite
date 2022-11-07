@@ -44,11 +44,11 @@ module vga_controller #(
 
          // Pixel Counters
          if (h_count < h_period - 1) begin
-            h_count <= h_count + 1;
+            h_count <= h_count + 1'd1;
          end else begin
             h_count <= 0;
             if (v_count < v_period - 1) begin
-               v_count <= v_count + 1;
+               v_count <= v_count + 1'd1;
             end else begin
                v_count <= 0;
             end

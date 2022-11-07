@@ -44,11 +44,10 @@ module lcd_ctrl (
 
 reg	[25:0]	count;
 wire				count_start;
-wire	[8:0]		count_25;
 wire				last_line;
 wire				first_line;
-wire				last_pixle;
-wire				first_pixle;
+wire				last_pixel;
+wire				first_pixel;
 wire	[10:0]	address;
 wire				add_init;
 wire				add_next;
@@ -80,17 +79,16 @@ always_ff @(posedge clk_25) begin
 		end
 	else
 		begin
-			count <= count + 1;
+			count <= count + 1'b1;
 		end
 end
 
 
 always_comb begin
-	count_25 = count[10:2];
 	last_line = pxl_x == 639;
 	first_line = pxl_x == 0;
-	last_pixle = last_line & (pxl_y == 479);
-	first_pixle = (pxl_x == 0) & (pxl_y == 0);
+	last_pixel = last_line & (pxl_y == 479);
+	first_pixel = (pxl_x == 0) & (pxl_y == 0);
 end
 	
 typedef enum int unsigned { 
@@ -433,11 +431,11 @@ lcd_cmd lcd_cmd_inst(
 // address counter
 always_ff @(posedge clk_25) 
 	begin
-		if (add_init == 1) begin
+		if (add_init) begin
 			address <= 0;
 		end
-		if (add_next == 1) begin
-		address <= address + 1;
+		if (add_next) begin
+		address <= address + 1'b1;
 		end
 	end
 	
@@ -482,7 +480,7 @@ always_comb
 					
 			rgb_state[RGB_WAIT_START]: begin
 									
-									if (first_pixle == 1) begin
+									if (first_pixel) begin
 										rgb_lcd_d_c = 1;
 										rgb_next_state[RGB_DATA_1_u] = 1'b1;
 										rgb_data_1 = 1;
@@ -527,7 +525,7 @@ always_comb
 								
 								
 							
-								if (last_pixle == 1) begin
+								if (last_pixel) begin
 									rgb_next_state[RGB_WAIT_NEXT_FRAME] = 1'b1;
 								end
 								else if (last_line == 1) begin
@@ -555,7 +553,7 @@ always_comb
 			rgb_state[RGB_WAIT_NEXT_FRAME]: begin
 										rgb_lcd_d_c = 1;
 										rgb_data_1 = 1;
-										if (first_pixle == 1) begin
+										if (first_pixel) begin
 												rgb_next_state[RGB_DATA_1_u] = 1'b1;
 												rgb_lcd_wr = 0;
 											end

@@ -35,13 +35,13 @@ analog_input analog_input_inst(
 	.a5(Wheel) // Wheel input
 	);
 	
-	assign A = a3 < 2048 ? 1 : 0; // A
-	assign B = a4 < 2048 ? 1 : 0; // B
-	assign Select = a2 > 12'hCFF ? 1 : 0; // Select
-	assign Start = a2 < 12'hCFF & a2 > 12'h5FF ? 1 : 0; // Start
-	assign Left = a0 > 12'hCFF ? 1 : 0; // Left
-	assign Right = a0 < 12'hCFF & a0 > 12'h5FF ? 1 : 0; // Right
-	assign Up = a1 > 12'hCFF ? 1 : 0; // UP
-	assign Down = a1 < 12'hCFF & a1 > 12'h5FF ? 1 : 0; // DOWN
+	assign A =      (a3 < 12'd2048);                  // A
+	assign B =      (a4 < 12'd2048);                  // B
+	assign Select = (a2 > 12'hCFF);                   // Select
+	assign Start =  (a2 < 12'hCFF) && (a2 > 12'h5FF); // Start
+	assign Left =   (a0 > 12'hCFF);                   // Left
+	assign Right =  (a0 < 12'hCFF) && (a0 > 12'h5FF); // Right
+	assign Up =     (a1 > 12'hCFF);                   // UP
+	assign Down =   (a1 < 12'hCFF) && (a1 > 12'h5FF); // DOWN
 
 endmodule
