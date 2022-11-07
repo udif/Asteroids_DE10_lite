@@ -1,0 +1,1 @@
+../ghost_alt_model.v
