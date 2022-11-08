@@ -268,7 +268,7 @@ periphery_control periphery_control_inst(
 // Priority mux for the RGB
 Drawing_priority drawing_mux(
 	.clk(clk_25),
-	.resetN(~A),
+	.resetN(~Select),
 	.RGB_1({r_intel,g_intel,b_intel}),
 	.draw_1(draw_intel),
 	.RGB_2({r_ghost,g_ghost,b_ghost}),
@@ -282,7 +282,7 @@ Drawing_priority drawing_mux(
 // Intel object
 Intel_unit Intel_unit_inst(
 	.clk(clk_25),
-	.resetN(~A),
+	.resetN(~Select),
 	.Wheel(Wheel),
 	.Up(Up),
 	.Down(Down),
@@ -297,11 +297,12 @@ Intel_unit Intel_unit_inst(
 // Ghost unit
 Ghost_unit  Ghost_unit_inst(	
 	.clk(clk_25),
-	.resetN(~A),
+	.resetN(~Select),
 	.collision(draw_intel && draw_ghost),
+	.B(B),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.wheel(Wheel),
+	.wheel(~Wheel), // match rotation direction
 	.Red(r_ghost),
 	.Green(g_ghost),
 	.Blue(b_ghost),

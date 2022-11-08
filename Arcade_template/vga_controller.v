@@ -13,14 +13,14 @@ module vga_controller #(
    parameter v_pulse    = 2,     // vertical pulse
    parameter v_bp       = 33,    // vertical back porch
    parameter v_pol      = 1'b0   // vertical sync polarity (1 = positive, 0 = negative)
-)( input pixel_clk,           // Pixel clock
+) ( input pixel_clk,           // Pixel clock
    input reset_n,             // Active low synchronous reset
    output reg h_sync,         // horizontal sync signal
    output reg v_sync,         // vertical sync signal
    output reg disp_ena,       // display enable (0 = all colors must be blank)
-   output reg [31:0] column,  // horizontal pixel coordinate
-   output reg [31:0] row      // vertical pixel coordinate
-   );
+   output reg [$clog2(h_pixels)-1:0] column,  // horizontal pixel coordinate
+   output reg [$clog2(v_pixels)-1:0] row      // vertical pixel coordinate
+);
 
    // Get total number of row and column pixel clocks
    localparam h_period = h_pulse + h_bp + h_pixels + h_fp;
@@ -70,11 +70,11 @@ module vga_controller #(
 
          // Update Pixel Coordinates
          if (h_count < h_pixels) begin
-            column <= h_count;
+            column <= h_count[$clog2(h_pixels)-1:0];
          end
 
          if (v_count < v_pixels) begin
-            row <= v_count;
+            row <= v_count[$clog2(v_pixels)-1:0];
          end
 
          // Set display enable output

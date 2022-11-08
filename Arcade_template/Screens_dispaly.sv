@@ -5,6 +5,8 @@
 
 
 module Screens_dispaly # (
+	parameter WIDTH=640,
+	parameter HEIGHT=480,
 	parameter RGB_LAT = 0
 ) (
 	
@@ -13,8 +15,8 @@ module Screens_dispaly # (
 	input		[3:0]		Red_level,
 	input		[3:0]		Green_level,
 	input		[3:0]		Blue_level,
-	output	[31:0]	pxl_x,
-	output	[31:0]	pxl_y,
+	output	[$clog2(WIDTH )-1:0]pxl_x,
+	output	[$clog2(HEIGHT)-1:0]pxl_y,
 	output	[3:0]		Red,
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
@@ -31,8 +33,8 @@ module Screens_dispaly # (
 	wire	[3:0]		Green_i;
 	wire	[3:0]		Blue_i;
 	wire				disp_ena;
-	wire	[31:0]	Pxl_x_i;
-	wire	[31:0]	Pxl_y_i;
+	wire	[$clog2(WIDTH )-1:0]Pxl_x_i;
+	wire	[$clog2(HEIGHT)-1:0]Pxl_y_i;
 	
 	wire h_sync_d;
 	wire v_sync_d;
