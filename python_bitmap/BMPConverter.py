@@ -39,7 +39,7 @@ InvertGrayScale = TRUE
 
 
 global TL_BMP_Position
-TL_BMP_Position = (400,50)
+TL_BMP_Position = (500,50)
 Original_Position = (100,50)
 
 ## how to make an exe program
@@ -104,6 +104,8 @@ def OpenGUIKeys():
     global OneBitbutton
     global grayThreshold, Threshold_Label
     global InvertGrayScalebutton
+    global OriginalImageSize
+    global TopCrop, BottomCrop
 
     # sliders
     bmpScale = Scale(root, from_=0, to=6, label="2^scale", variable=IntVar(), command=picModify)
@@ -114,12 +116,44 @@ def OpenGUIKeys():
     ResizeScale.set(0)
     ResizeScale.place(x=0, y=250)
 
+    # Crop
+    Crop_Label = Label(root, text="Crop")
+    Crop_Label.place(x=410, y=40)
+
+    TopCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    TopCrop.set(0)
+    TopCrop.place(x=370, y=60)
+    TopCrop_Label = Label(root, text="Top")
+    TopCrop_Label.place(x=390, y=160)
+
+    BottomCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    BottomCrop.set(0)
+    BottomCrop.place(x=430, y=60)
+    BottomCrop_Label = Label(root, text="Bot")
+    BottomCrop_Label.place(x=450, y=160)
+
+    LeftCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    LeftCrop.set(0)
+    LeftCrop.place(x=370, y=205)
+    LeftCrop_Label = Label(root, text="Left")
+    LeftCrop_Label.place(x=390, y=185)
+
+    RightCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    RightCrop.set(0)
+    RightCrop.place(x=430, y=205)
+    RightCrop_Label = Label(root, text="Right")
+    RightCrop_Label.place(x=445, y=185)
+
     # gray scale controls
     grayThreshold = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
     grayThreshold.set(256)
-    grayThreshold.place(x=550, y=350)
+    bmpScale.place(x=0, y=100)
+
     Threshold_Label = Label(root, text="      off")
     Threshold_Label.place(x=550, y=470)
+
+    OriginalImageSize = Label(root, text="")
+    OriginalImageSize.place(x=200, y=30)
 
     InvertGrayScalebutton = Button(root, text="            ", command=InvertSelect)
     InvertGrayScalebutton.place(x=550, y=500)
@@ -195,6 +229,9 @@ def OpenGUIKeys():
 
     OneBitbutton = Button(root, text="{} bit (press for 1 bit)".format(bits), bg='green', command=SingleBitBitMapSelect)
     OneBitbutton.place(x=50, y=500)
+
+    NewImagebutton = Button(root, text="New image", bg='light blue', command=open_img)
+    NewImagebutton.place(x=50, y=550)
 
     SVFilebutton = Button(root, text="create SV file & exit", bg='light blue', command=writeVerilog)
     SVFilebutton.place(x=300, y=500)
@@ -491,12 +528,14 @@ def open_img():
     global FileName
     global imgOriginal, imgFromFile
     global imgBMP
+    global OriginalImageSize
 
     path = "smiley.jpg"
-    path = filedialog.askopenfilename( filetypes=[("jpg, bmp", '*.jpg *.bmp'),("all files", '*.*')], title="Choose filename")
+    path = filedialog.askopenfilename( filetypes=[("jpg, bmp, png", '*.jpg *.bmp *.png'),("all files", '*.*')], title="Choose filename")
 
     img1 = Image.open(path).convert('RGB')
     width, height = img1.size
+
     #print ( width)
     #print ( height)
     Image_ratio_float = width /  height
@@ -551,6 +590,7 @@ def open_img():
     OpenGUIKeys()
     BMPpicDisplay()
 
+    OriginalImageSize.config(text="{}x{}".format(width, height))
 
     # ____________________________________________________________________________________________________
 def picModify(v):
