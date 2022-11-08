@@ -37,6 +37,11 @@ global InvertGrayScale
 global InvertGrayScalebutton
 InvertGrayScale = TRUE
 
+global CropFlag
+CropFlag = None
+
+global NoResizeFlag
+NoResizeFlag = None
 
 global TL_BMP_Position
 TL_BMP_Position = (500,50)
@@ -96,6 +101,8 @@ def selectmouse(v):
 
     BMPpicDisplay()
 
+def picModifyNoArgs():
+    picModify(0)
 
 def OpenGUIKeys():
     global bmpScale, ResizeScale
@@ -106,6 +113,8 @@ def OpenGUIKeys():
     global InvertGrayScalebutton
     global OriginalImageSize
     global TopCrop, BottomCrop
+    global CropFlag
+    global NoResizeFlag
 
     # sliders
     bmpScale = Scale(root, from_=0, to=6, label="2^scale", variable=IntVar(), command=picModify)
@@ -116,38 +125,46 @@ def OpenGUIKeys():
     ResizeScale.set(0)
     ResizeScale.place(x=0, y=250)
 
+    NoResizeFlag = IntVar()
+    NoResizeButton = Checkbutton(root, variable=NoResizeFlag, onvalue = 1, offvalue = 0, text="Native Res", command=picModifyNoArgs)
+    NoResizeButton.place(x=10, y=60)
+
     # Crop
-    Crop_Label = Label(root, text="Crop")
-    Crop_Label.place(x=410, y=40)
+    CropFlag = IntVar()
+    CropButton = Checkbutton(root, variable=CropFlag, onvalue = 1, offvalue = 0, text="Auto Crop", command=picModifyNoArgs)
+    CropButton.place(x=250, y=320)
 
-    TopCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
-    TopCrop.set(0)
-    TopCrop.place(x=370, y=60)
-    TopCrop_Label = Label(root, text="Top")
-    TopCrop_Label.place(x=390, y=160)
+    #Crop_Label = Label(root, text="Crop")
+    #Crop_Label.place(x=410, y=40)
 
-    BottomCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
-    BottomCrop.set(0)
-    BottomCrop.place(x=430, y=60)
-    BottomCrop_Label = Label(root, text="Bot")
-    BottomCrop_Label.place(x=450, y=160)
+    #TopCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    #TopCrop.set(0)
+    #TopCrop.place(x=370, y=60)
+    #TopCrop_Label = Label(root, text="Top")
+    #TopCrop_Label.place(x=390, y=160)
 
-    LeftCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
-    LeftCrop.set(0)
-    LeftCrop.place(x=370, y=205)
-    LeftCrop_Label = Label(root, text="Left")
-    LeftCrop_Label.place(x=390, y=185)
+    #BottomCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    #BottomCrop.set(0)
+    #BottomCrop.place(x=430, y=60)
+    #BottomCrop_Label = Label(root, text="Bot")
+    #BottomCrop_Label.place(x=450, y=160)
 
-    RightCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
-    RightCrop.set(0)
-    RightCrop.place(x=430, y=205)
-    RightCrop_Label = Label(root, text="Right")
-    RightCrop_Label.place(x=445, y=185)
+    #LeftCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    #LeftCrop.set(0)
+    #LeftCrop.place(x=370, y=205)
+    #LeftCrop_Label = Label(root, text="Left")
+    #LeftCrop_Label.place(x=390, y=185)
+
+    #RightCrop = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
+    #RightCrop.set(0)
+    #RightCrop.place(x=430, y=205)
+    #RightCrop_Label = Label(root, text="Right")
+    #RightCrop_Label.place(x=445, y=185)
 
     # gray scale controls
     grayThreshold = Scale(root, from_=0, to=256, variable=IntVar(), command=picModify)
     grayThreshold.set(256)
-    bmpScale.place(x=0, y=100)
+    grayThreshold.place(x=550, y=350)
 
     Threshold_Label = Label(root, text="      off")
     Threshold_Label.place(x=550, y=470)
@@ -242,8 +259,8 @@ def OpenGUIKeys():
     HEXFilebutton = Button(root, text="create readmemh file", bg='light blue', command=writeMem)
     HEXFilebutton.place(x=450, y=550)
 
-    HEXFilebutton = Button(root, text="create Intel HEX file", bg='light blue', command=writeIHex)
-    HEXFilebutton.place(x=600, y=550)
+    #HEXFilebutton = Button(root, text="create Intel HEX file", bg='light blue', command=writeIHex)
+    #HEXFilebutton.place(x=600, y=550)
 
 def RGBpicModify(dummy):
     global bitsR, bitsG, bitsB, bits
@@ -524,17 +541,16 @@ def BLURKey():
 ##
 
 # ____________________________________________________________________________________________________
-def open_img():
-    global FileName
+def handle_img_size():
     global imgOriginal, imgFromFile
-    global imgBMP
-    global OriginalImageSize
+    global img1
 
-    path = "smiley.jpg"
-    path = filedialog.askopenfilename( filetypes=[("jpg, bmp, png", '*.jpg *.bmp *.png'),("all files", '*.*')], title="Choose filename")
-
-    img1 = Image.open(path).convert('RGB')
-    width, height = img1.size
+    imageBox = img1.getbbox()
+    if CropFlag and CropFlag.get():
+        cropped = img1.crop(imageBox)
+    else:
+        cropped = img1
+    width, height = cropped.size
 
     #print ( width)
     #print ( height)
@@ -568,8 +584,22 @@ def open_img():
 
 
      # create the original image,used for all later conversions
-    imgFromFile = img1.resize(OriginalImageTruncedSize,Image.NEAREST)
+    imgFromFile = cropped.resize(OriginalImageTruncedSize,Image.NEAREST)
     imgOriginal = imgFromFile.resize(imgFromFile.size, Image.NEAREST)
+    return (width, height)
+
+def open_img():
+    global FileName
+    global imgOriginal, imgFromFile
+    global imgBMP
+    global OriginalImageSize
+    global CropFlag
+    global img1
+
+    path = "smiley.jpg"
+    path = filedialog.askopenfilename( filetypes=[("jpg, bmp, png", '*.jpg *.bmp *.png'),("all files", '*.*')], title="Choose filename")
+
+    img1 = Image.open(path).convert('RGB')
 
  #  copy
     # get the bare filename for the verilog file
@@ -578,7 +608,7 @@ def open_img():
     FileName  = pro.split('.')[0]
 
     # create initial original image and print
-
+    (width, height) = handle_img_size()
     img255 = ImageTk.PhotoImage(imgOriginal)
     LeftImage = Label(root, image=img255)
     LeftImage.place(x=Original_Position[0], y=Original_Position[1])
@@ -597,10 +627,14 @@ def picModify(v):
     # Split into 3 channels,  pixilize color t o8 bits, pixelize to imgBMP.size 
     global imgBMP, bmpScale
 
-    # resize
+    (width, height) = handle_img_size()
+    global OriginalImageSize
+    OriginalImageSize.config(text="{}x{}".format(width, height))
 
+    # resize
     BMP_ratio = pow(2, bmpScale.get())
-    width, height = imgOriginal.size
+    if not NoResizeFlag or not  NoResizeFlag.get():
+        width, height = imgOriginal.size
     BMP_ratio = min(BMP_ratio,width, height)  #  so it is minmal
     imgBMPsize = (int(width / BMP_ratio) ,int ( height / BMP_ratio ))
 
