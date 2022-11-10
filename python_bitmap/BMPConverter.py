@@ -72,7 +72,7 @@ def selectmouse(v):
     if ( TL_BMP_Position[0] < abs_coord_x ) and ((TL_BMP_Position[0] + imgOriginal.size[0]) > abs_coord_x) and (TL_BMP_Position[1] < abs_coord_y) and ((TL_BMP_Position[1] + imgOriginal.size[1] ) > abs_coord_y):
         print("in Right")
 
-        img256 = imgBMP.resize(imgOriginal.size,Image.NEAREST)
+        img256 = imgBMP.resize(imgOriginal.size,Image.Resampling.NEAREST)
         r, g, b = img256.getpixel(cordinate)
         # change pixels on the small imgBMP array
         pixels = imgBMP.load()  # create the pixel map
@@ -323,7 +323,7 @@ def SingleBitBitMapSelect():
 def BMPpicDisplay():
     # print ("BMPicDisplay")
     #  extend the BMP to the original size and display it
-    img256 = imgBMP.resize(imgOriginal.size,Image.NEAREST)
+    img256 = imgBMP.resize(imgOriginal.size,Image.Resampling.NEAREST)
     img256 = ImageTk.PhotoImage(img256)
     RightImage = Label(root, image=img256)
     RightImage.place (x=TL_BMP_Position[0],y= TL_BMP_Position[1]) # (x=400, y=50)
@@ -469,7 +469,7 @@ def writeIHex():
 def ResetToOriginal():
     global imgOriginal,Rlambda,Glambda,Blambda
     global Rbits, Gbits, Bbits
-    imgOriginal = imgFromFile.resize(imgOriginal.size, Image.NEAREST)
+    imgOriginal = imgFromFile.resize(imgOriginal.size, Image.Resampling.NEAREST)
 
     Rlambda.set(100)
     Glambda.set(100)
@@ -555,7 +555,7 @@ def handle_img_size():
 
     if RotateScale and RotateScale.get() > 0:
 
-        rotated = img1.transpose((None, Image.ROTATE_270, Image.ROTATE_180, Image.ROTATE_90)[RotateScale.get()])
+        rotated = img1.transpose((None, Image.Transpose.ROTATE_270, Image.Transpose.ROTATE_180, Image.Transpose.ROTATE_90)[RotateScale.get()])
     else:
         rotated = img1
 
@@ -597,8 +597,8 @@ def handle_img_size():
 
 
      # create the original image,used for all later conversions
-    imgFromFile = cropped.resize(OriginalImageTruncedSize,Image.NEAREST)
-    imgOriginal = imgFromFile.resize(imgFromFile.size, Image.NEAREST)
+    imgFromFile = cropped.resize(OriginalImageTruncedSize,Image.Resampling.NEAREST)
+    imgOriginal = imgFromFile.resize(imgFromFile.size, Image.Resampling.NEAREST)
     return (width, height)
 
 def open_img():
