@@ -104,7 +104,9 @@ begin
 	// we start with an unsigned x/y pos and end with a new x/y pos that may either underflow (negative)
 	// or overflow the allocated WIDTH/HEIGHT bits, and we need to detect both cases
 	x_temp = {2'b0, x} + `SIGN_EXTEND($bits(x_temp), x_speed_2);
-	y_temp = {2'b0, y} + `SIGN_EXTEND($bits(y_temp), y_speed_2);
+	// We subtract here because while math axes has Y positive going up,
+	// The computer graphics axes has (0,0) at top-left with Y positive going down
+	y_temp = {2'b0, y} - `SIGN_EXTEND($bits(y_temp), y_speed_2);
 
 	// We only check integer bits and ignore fraction bits because WIDTH/HEIGHT have no fractions
 	x_temp_fix[XY_FRACTION-1:0] = '0;
