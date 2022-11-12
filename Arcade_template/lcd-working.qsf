@@ -435,6 +435,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[32]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[33]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[34]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[35]
+set_global_assignment -name SYSTEMVERILOG_FILE Ship_unit.sv
 set_global_assignment -name SYSTEMVERILOG_FILE lfsr.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Draw_Stars.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Move_Ship.sv
@@ -452,7 +453,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE Screens_dispaly.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Top_template.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Drawing_priority.sv
 set_global_assignment -name SYSTEMVERILOG_FILE periphery_control.sv
-set_global_assignment -name SYSTEMVERILOG_FILE Ghost_unit.sv
 set_global_assignment -name TEXT_FILE Text1.txt
 set_global_assignment -name QIP_FILE sincos.qip
 set_global_assignment -name QIP_FILE spaceship.qip
