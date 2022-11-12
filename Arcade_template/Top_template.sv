@@ -273,19 +273,16 @@ Drawing_priority drawing_mux(
 	.draw_1(draw_intel),
 	.RGB_2({r_ghost,g_ghost,b_ghost}),
 	.draw_2(draw_ghost),
-	.RGB_bg(12'hFFF),
+	.RGB_bg(12'h000),
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level)
 	);
 	
-// Intel object
-Intel_unit Intel_unit_inst(
+// Starfield
+Draw_Stars Draw_Stars_inst(
 	.clk(clk_25),
 	.resetN(~Select),
-	.Wheel(Wheel),
-	.Up(Up),
-	.Down(Down),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
 	.Red(r_intel),
@@ -295,7 +292,7 @@ Intel_unit Intel_unit_inst(
 	);
 
 // Ghost unit
-Ghost_unit  Ghost_unit_inst(	
+Ship_unit  Ghost_unit_inst(	
 	.clk(clk_25),
 	.resetN(~Select),
 	.collision(draw_intel && draw_ghost),

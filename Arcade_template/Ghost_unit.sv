@@ -4,7 +4,7 @@
 
 
 
-module Ghost_unit #(
+module Ship_unit #(
 	parameter WIDTH = 640,
 	parameter HEIGHT = 480
 ) (
@@ -46,8 +46,8 @@ module Ghost_unit #(
 
 
 
-wire	[$clog2(WIDTH )-1:0]topLeft_x_ghost;
-wire	[$clog2(HEIGHT)-1:0]topLeft_y_ghost;
+wire	[$clog2(WIDTH )-1:0]topLeft_x_ship;
+wire	[$clog2(HEIGHT)-1:0]topLeft_y_ship;
 	
 // The analog output seems to be in the range 0x00 - 0xF4
 // we need to multiply the 12 bit ADC by 6 bit to get 18 bit adjusted value
@@ -65,7 +65,7 @@ sin_cos sin_cos_inst (
 	.cos_val(cos_val)
 );
 
-Move_Ghost #(
+Move_Ship #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT)
 ) move_inst2(
@@ -75,11 +75,14 @@ Move_Ghost #(
 	.B(B),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
-	.topLeft_x(topLeft_x_ghost),
-	.topLeft_y(topLeft_y_ghost)
+	.topLeft_x(topLeft_x_ship),
+	.topLeft_y(topLeft_y_ship)
 	);
 
-Draw_Ghost #(
+wire [11:0]sprite_addr;
+wire [11:0]sprite_data;
+
+Draw_Sprite #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT)
 ) draw_inst2(
@@ -87,17 +90,27 @@ Draw_Ghost #(
 	.resetN(resetN),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.topLeft_x(topLeft_x_ghost),
-	.topLeft_y(topLeft_y_ghost),
-	.width(10'd64),
-	.height(9'd64),
-	.offset_x(10'd32),
-	.offset_y(9'd32),
+	.topLeft_x(topLeft_x_ship),
+	.topLeft_y(topLeft_y_ship),
+	.width(10'd24),
+	.height(9'd28),
+	.offset_x(10'd12),
+	.offset_y(9'd14),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
+	.sprite_addr(sprite_addr),
+	.sprite_data(sprite_data),
 	.Red_level(Red),
 	.Green_level(Green),
 	.Blue_level(Blue),
 	.Drawing(Draw)
 	);
+
+spaceship	spaceship_inst (
+	.clock(clk),
+	.address(sprite_addr),
+	.q(sprite_data)
+);
+
+
 endmodule

@@ -9,7 +9,7 @@
 // if we check size by $clog2, it is meaningless for signess, sinec we'll always get 1 at the high bit
 //`define SIGN_EXTEND_C(bits, c) {{(bits - $clog2(c)){vec[$clog2(c)-1]}}, c[$clog2(c)-1:0]}
 
-module Move_Ghost #(
+module Move_Ship #(
 	// screen size
 	parameter WIDTH=640,
 	parameter HEIGHT=480,
