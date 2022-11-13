@@ -58,8 +58,11 @@ always @(posedge clk or negedge resetN) begin
         end else if (cnt > 0) begin
             init <= 0;
             // countdown to next star
+            Red <= 4'h0;
+            Green <= 4'h0;
+            Blue <= 4'h0;
             Draw <= '0;
-            cnt <= cnt - 1;
+            cnt <= cnt - {{($bits(cnt)-1){1'b0}}, 1'b1};
         end else begin
             init <= 0;
             cnt <= lfsr;

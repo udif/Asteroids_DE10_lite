@@ -86,6 +86,7 @@ assign in_rectangle =
 	(tl_dxr < width) && // not too right
 	(tl_dyr >= 0) &&    // not too high
 	(tl_dyr < height);  // not too low
+// TODO delay by 2 to match ROM
 
 localparam TANSPERENT = 12'h000;
 

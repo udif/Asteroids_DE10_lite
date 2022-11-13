@@ -15,7 +15,8 @@ module Move_Ship #(
 	parameter HEIGHT=480,
 	parameter BTN_RATE = 10, // 10 button updates/s
 	parameter DIVIDER=125_000, // This is not a localparam for DV reasons
-	parameter CLK_RATE=25_000_000 // ditto
+	parameter CLK_RATE=25_000_000, // ditto
+	parameter DEBUG_SIZE = 1
 ) (
 	
 	input clk,
@@ -28,7 +29,7 @@ module Move_Ship #(
 
 	output [$clog2(WIDTH )-1:0] topLeft_x,
 	output [$clog2(HEIGHT)-1:0] topLeft_y
-	
+	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 );
 
 	//
@@ -53,8 +54,9 @@ localparam [Y_W+XY_FRACTION-1:0]	y_init = {1'b0, HEIGHT[Y_W-1:1], {XY_FRACTION{1
 //
 // Notice that the speed field width is taken from here automatically even without
 // defining a parameter
-localparam SPEED_FRAC_BITS = 10;
-localparam [17:0]SPEED = (1 << (18 - SPEED_FRAC_BITS)) / BTN_RATE;
+localparam SPEED_FRAC_BITS = 12;
+// Integer part of speed before sin/cos scaling
+localparam SPEED = (1 << 14) / BTN_RATE;
 // How many bits in speed are fractions
 //
 // We have a main divider for position update
@@ -62,6 +64,8 @@ localparam [17:0]SPEED = (1 << (18 - SPEED_FRAC_BITS)) / BTN_RATE;
 // We don't want to read the acceleration button 200 times/s
 //
 localparam BTN_DIVIDER = (CLK_RATE / DIVIDER / BTN_RATE);
+localparam BTN_DIVIDER_M1 = BTN_DIVIDER - 1;
+
 reg [$clog2(BTN_DIVIDER)-1:0]btn_counter;
 
 // When counter wraps around, we update position and speed
@@ -70,12 +74,18 @@ reg [$clog2(DIVIDER)-1:0]counter;
 //
 // All speed variables are 8.17s (8 bits signed int, 17 bits fraction)
 // one bit less is due to sin/cos sign bit
-localparam SPEED_W = $bits(sin_val)-1+$bits(SPEED);
+localparam SPEED_W = $bits(sin_val)-1+($clog2(SPEED)+2);
 
-wire signed [SPEED_W-1:0]x_speed_inc = $signed(SPEED) * cos_val;
-wire signed [SPEED_W-1:0]y_speed_inc = $signed(SPEED) * sin_val;
+wire signed [SPEED_W-1:0]x_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * cos_val;
+wire signed [SPEED_W-1:0]y_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * sin_val;
 reg  signed [SPEED_W-1:0]x_speed;
 reg  signed [SPEED_W-1:0]y_speed;
+
+//
+// New speed
+//
+wire signed [SPEED_W-1:0]x_speed_new = x_speed + x_speed_inc;
+wire signed [SPEED_W-1:0]y_speed_new = y_speed + y_speed_inc;
 
 // Temporary position before we take into account wraparound
 // We add 2 more bit because these fields can temporarily overflow WIDTH and HEIGHT
@@ -95,8 +105,20 @@ reg [Y_W+XY_FRACTION-1:0]y;
 // we don't bother with rounding.
 // we start at x/y_speed fraction point position ($bits(sin_val)-1), then mode right XY_FRACTION bits,
 // since this is the x/y precision, and we make up for this by addition those XY_FRACTION bits to the width
-wire [SPEED_W-SPEED_FRAC_BITS+XY_FRACTION-1:0]x_speed_2 = x_speed[SPEED_W-1:($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION];
-wire [SPEED_W-SPEED_FRAC_BITS+XY_FRACTION-1:0]y_speed_2 = y_speed[SPEED_W-1:($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION];
+wire [((SPEED_W-1)-(($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION)+1)-1:0]x_speed_2 = x_speed[SPEED_W-1:($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION];
+wire [((SPEED_W-1)-(($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION)+1)-1:0]y_speed_2 = y_speed[SPEED_W-1:($bits(sin_val)-1)+SPEED_FRAC_BITS-XY_FRACTION];
+
+//assign debug_out[0] = {`SIGN_EXTEND(32, x), `SIGN_EXTEND(32, y)};
+
+//assign debug_out[1] = {speed_update_ok, `SIGN_EXTEND(63, x_speed_new)};
+
+//assign debug_out[0] = `SIGN_EXTEND(64, x_speed_2);
+
+//assign debug_out[1] = `SIGN_EXTEND(64, x_temp);
+
+//assign debug_out[2] = `SIGN_EXTEND(64, x_temp_fix);
+
+//assign debug_out[3] = `SIGN_EXTEND(64, x);
 
 always_comb
 begin
@@ -126,17 +148,12 @@ begin
 		y_temp_fix[XY_FRACTION +: (Y_W + 2)] = '0;
 end
 
-//
-// New speed
-//
-wire signed [SPEED_W-1:0]x_speed_new = x_speed + x_speed_inc;
-wire signed [SPEED_W-1:0]y_speed_new = y_speed + y_speed_inc;
 // check if both x and y 3 top bits are wither 000 or 111
 wire speed_update_ok =
-	(( &x_speed_new[SPEED_W-1 -: 3]) ||  // new x speed less than 25% of max neg
-	 (~|x_speed_new[SPEED_W-1 -: 3])) && // new x speed less than 25% of max pos
-	(( &y_speed_new[SPEED_W-1 -: 3]) ||  // new y speed less than 25% of max neg
-	 (~|y_speed_new[SPEED_W-1 -: 3]));   // new y speed less than 25% of max pos
+	(( &x_speed_new[SPEED_W-1 -: 2]) ||  // new x speed less than 25% of max neg
+	 (~|x_speed_new[SPEED_W-1 -: 2])) && // new x speed less than 25% of max pos
+	(( &y_speed_new[SPEED_W-1 -: 2]) ||  // new y speed less than 25% of max neg
+	 (~|y_speed_new[SPEED_W-1 -: 2]));   // new y speed less than 25% of max pos
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
@@ -153,9 +170,11 @@ always @(posedge clk or negedge resetN) begin
 				
 		if (counter == DIV_LIMIT) begin
 			btn_counter <= btn_counter + 1'b1;
-			if (btn_counter == BTN_DIVIDER[$clog2(BTN_DIVIDER)-1:0]) begin
+			if (btn_counter == BTN_DIVIDER_M1[$clog2(BTN_DIVIDER)-1:0]) begin
+				$display("reset");
 				btn_counter <= '0;
 				if (B && speed_update_ok) begin
+					$display("speed inc");
 					x_speed <= x_speed_new;
 					y_speed <= y_speed_new;
 				end

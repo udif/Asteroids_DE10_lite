@@ -144,23 +144,6 @@ wire	[3:0]		Red_level;
 wire	[3:0]		Green_level;
 wire	[3:0]		Blue_level;
 
-// Intel module move and draw signals
-wire	[3:0]		r_intel;
-wire	[3:0]		g_intel;
-wire	[3:0]		b_intel;
-wire				draw_intel;
-wire	[31:0]	topLeft_x_intel;
-wire	[31:0]	topLeft_y_intel;
-
-// Ghost module move and draw signals
-wire	[3:0]		r_ghost;
-wire	[3:0]		g_ghost;
-wire	[3:0]		b_ghost;
-wire				draw_ghost;
-wire 				ghost_x_direction;
-wire	[31:0]	topLeft_x_ghost;
-wire	[31:0]	topLeft_y_ghost;
-
 // Periphery signals
 wire	A;
 wire	B;
@@ -186,6 +169,8 @@ assign VGA_VS = v_sync_wire;
 assign VGA_R = vga_r_wire;
 assign VGA_G = vga_g_wire;
 assign VGA_B = vga_b_wire;
+
+wire resetN = ~Select;
 
 
 // Screens control (LCD and VGA)
@@ -265,15 +250,31 @@ periphery_control periphery_control_inst(
 	.out_to_ss(HEX4)
 );
 
+localparam DEBUG_SIZE=1;
+
+//wire [DEBUG_SIZE-1:0][63:0]debug_out;
+localparam SCORE_DIGITS = 6;
+reg [SCORE_DIGITS-1:0][3:0]score;
+reg [SCORE_DIGITS-1:0][3:0]score_out;
+
+// 0 ship
+// 1 score top
+// 2 score middle
+// 3 score bottom
+// 4 stars (BG)
+wire [2:0][11:0]RGB;
+wire [1:0]draw;
+
+
 // Priority mux for the RGB
-Drawing_priority drawing_mux(
+Drawing_priority #(
+	.SIZE($bits(draw))
+) drawing_mux(
 	.clk(clk_25),
-	.resetN(~Select),
-	.RGB_1({r_intel,g_intel,b_intel}),
-	.draw_1(draw_intel),
-	.RGB_2({r_ghost,g_ghost,b_ghost}),
-	.draw_2(draw_ghost),
-	.RGB_bg(12'h000),
+	.resetN(resetN),
+	.RGB(RGB[1:0]),
+	.draw(draw),
+	.RGB_bg(RGB[2]),
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level)
@@ -282,28 +283,57 @@ Drawing_priority drawing_mux(
 // Starfield
 Draw_Stars Draw_Stars_inst(
 	.clk(clk_25),
-	.resetN(~Select),
+	.resetN(resetN),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.Red(r_intel),
-	.Green(g_intel),
-	.Blue(b_intel),
-	.Draw(draw_intel)
+	.Red  (RGB[2][11:8]),
+	.Green(RGB[2][7:4]),
+	.Blue (RGB[2][3:0]),
+	.Draw()
 	);
 
-// Ghost unit
-Ship_unit  Ghost_unit_inst(	
+// ship unit
+Ship_unit #(
+	.DEBUG_SIZE(DEBUG_SIZE)
+) ship_unit_inst(	
 	.clk(clk_25),
-	.resetN(~Select),
-	.collision(draw_intel && draw_ghost),
+	.resetN(resetN),
+	.collision(1'b0),
 	.B(B),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
 	.wheel(~Wheel), // match rotation direction
-	.Red(r_ghost),
-	.Green(g_ghost),
-	.Blue(b_ghost),
-	.Draw(draw_ghost)
-);	
+	.Red  (RGB[1][11:8]),
+	.Green(RGB[1][7:4]),
+	.Blue (RGB[1][3:0]),
+	.Draw(draw[1])
+	//,.debug_out(debug_out)
+);
 
+score_box #(
+	.DIGITS(SCORE_DIGITS)
+) score_box_inst (
+	.clk(clk_25),
+	.resetN(resetN),
+	.add(draw[0] & draw[1]),
+	.sum(1),
+	.result(score)
+);
+
+genvar g;
+// ship unit
+Draw_Score #(
+	.DIGITS(SCORE_DIGITS)
+) score_inst(	
+	.clk(clk_25),
+	.pxl_x(pxl_x),
+	.pxl_y(pxl_y),
+	.offsetX(10'd0),
+	.offsetY(g*40),
+	.digits(score),
+	.Red  (RGB[0][11:8]),
+	.Green(RGB[0][7:4]),
+	.Blue (RGB[0][3:0]),
+	.Draw(draw[0])
+);
 endmodule

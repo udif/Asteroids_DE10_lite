@@ -6,7 +6,8 @@
 
 module Ship_unit #(
 	parameter WIDTH = 640,
-	parameter HEIGHT = 480
+	parameter HEIGHT = 480,
+	parameter DEBUG_SIZE = 1
 ) (
 	
 	input		clk,
@@ -20,6 +21,7 @@ module Ship_unit #(
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
 	output	Draw
+	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 	);
 
 // NOte for later:
@@ -67,7 +69,8 @@ sin_cos sin_cos_inst (
 
 Move_Ship #(
 	.WIDTH(WIDTH),
-	.HEIGHT(HEIGHT)
+	.HEIGHT(HEIGHT),
+	.DEBUG_SIZE(DEBUG_SIZE)
 ) move_inst2(
 	.clk(clk),
 	.resetN(resetN),
@@ -77,6 +80,7 @@ Move_Ship #(
 	.cos_val(cos_val),
 	.topLeft_x(topLeft_x_ship),
 	.topLeft_y(topLeft_y_ship)
+	//,.debug_out(debug_out)
 	);
 
 wire [11:0]sprite_addr;
