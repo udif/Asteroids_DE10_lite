@@ -252,6 +252,46 @@ periphery_control periphery_control_inst(
 	.out_to_ss(HEX4)
 );
 
+//
+// Shared animation pulse
+// each pulse (1/5sec) increments the next frame in sprite animations
+//
+localparam ANIM_CNT = 12;
+localparam ANIM_CNT_M1 = ANIM_CNT - 1;
+
+reg [$clog2(ANIM_CNT)-1:0]anim_cnt;
+reg anim_pulse;
+reg v_sync_wire_d;
+always @(posedge clk_25) begin
+    v_sync_wire_d <= v_sync_wire;
+    anim_pulse <= 1'b0;
+    if (v_sync_wire && !v_sync_wire_d) begin
+        if(anim_cnt > 0) 
+            anim_cnt <= anim_cnt - {{($bits(anim_cnt)-1){1'b0}}, 1'b1};
+        else begin
+            anim_cnt <= ANIM_CNT_M1[$bits(anim_cnt)-1:0];
+            anim_pulse <= 1'b1;
+        end
+    end
+end
+
+// we have 3 sprite cycles
+localparam ANIM_CYCLE_TORPEDO = 3;
+localparam ANIM_CYCLE_TORPEDO_M1 = ANIM_CYCLE_TORPEDO - 1;
+reg [$clog2(ANIM_CYCLE_TORPEDO)-1:0]anim_cycle_torpedo;
+always @(posedge clk_25)
+    if (anim_pulse)
+        if (anim_cycle_torpedo)
+            anim_cycle_torpedo <= anim_cycle_torpedo - {{($bits(anim_cycle_torpedo)-1){1'b0}}, 1'b1};
+        else 
+            anim_cycle_torpedo <= ANIM_CYCLE_TORPEDO_M1[$bits(anim_cycle_torpedo)-1:0];
+// calculate base address in ROM of each anim frame
+localparam ANIM_SIZE_TORPEDO=90;
+wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]anim_base =
+    (anim_cycle_torpedo == 2) ? (2 * ANIM_SIZE_TORPEDO) :
+    (anim_cycle_torpedo == 1) ? (1 * ANIM_SIZE_TORPEDO) :
+                                 0;
+
 localparam DEBUG_SIZE=1;
 
 //wire [DEBUG_SIZE-1:0][63:0]debug_out;
@@ -321,6 +361,7 @@ Ship_unit #(
 	.wheel(~Wheel), // match rotation direction
 	.sin_val(sin_val),
 	.cos_val(cos_val),
+	.anim_pulse(anim_pulse),
 	.Red  (RGB[RGB_SHIP][11:8]),
 	.Green(RGB[RGB_SHIP][7:4]),
 	.Blue (RGB[RGB_SHIP][3:0]),
@@ -372,9 +413,10 @@ generate
 			.ship_x(ship_x),
 			.ship_y(ship_y),
 			.resetN(resetN),
-			.vsync(v_sync_wire),
+			.vsync(v_sync_wire && !v_sync_wire_d),
 			.sin_val(sin_val),
 			.cos_val(cos_val),
+			.anim_base(anim_base),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1]),
 			.Red  (RGB[RGB_TORPEDO+t][11:8]),

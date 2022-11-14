@@ -21,6 +21,7 @@ module Ship_unit #(
 	input    [11:0]    wheel,
 	output signed [17:0] sin_val,
 	output signed [17:0] cos_val,
+	input anim_pulse,
 	output	[3:0]		Red,
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
@@ -49,8 +50,6 @@ module Ship_unit #(
 // 10 lines v_fp (8000 cycles)
 // 2 lines vertical pulse (1600 cycles)
 // 33 lines back porch (26400 cycles)
-
-
 
 wire	[$clog2(WIDTH )-1:0]topLeft_x_ship;
 wire	[$clog2(HEIGHT)-1:0]topLeft_y_ship;
@@ -87,9 +86,27 @@ Move_Ship #(
 wire [11:0]sprite_addr;
 wire [11:0]sprite_data;
 
+// we have 4 sprite cycles
+localparam ANIM_CYCLE_SPACESHIP = 4;
+localparam ANIM_CYCLE_SPACESHIP_M1 = ANIM_CYCLE_SPACESHIP - 1;
+reg [$clog2(ANIM_CYCLE_SPACESHIP)-1:0]anim_cycle_spaceship;
+always @(posedge clk)
+    if (anim_pulse)
+        anim_cycle_spaceship <= anim_cycle_spaceship - {{($bits(anim_cycle_spaceship)-1){1'b0}}, 1'b1};
+
+// calculate base address in ROM of each anim frame
+localparam ANIM_SIZE_SPACESHIP=1020;
+wire [$clog2(ANIM_SIZE_SPACESHIP * (ANIM_CYCLE_SPACESHIP - 1))-1:0]anim_base =
+    !B ? 0: // no engine, no flame animation
+    (anim_cycle_spaceship == 3) ? (3 * ANIM_SIZE_SPACESHIP) :
+    (anim_cycle_spaceship == 2) ? (2 * ANIM_SIZE_SPACESHIP) :
+    (anim_cycle_spaceship == 1) ? (1 * ANIM_SIZE_SPACESHIP) :
+                                 0;
+
 Draw_Sprite #(
 	.WIDTH(WIDTH),
-	.HEIGHT(HEIGHT)
+	.HEIGHT(HEIGHT),
+	.TRANSPARENT(12'h0f0)
 ) draw_inst2(
 	.clk(clk),
 	.resetN(resetN),
@@ -97,10 +114,10 @@ Draw_Sprite #(
 	.pxl_y(pxl_y),
 	.topLeft_x(topLeft_x_ship),
 	.topLeft_y(topLeft_y_ship),
-	.width(10'd24),
-	.height(9'd28),
-	.offset_x(10'd12),
-	.offset_y(9'd14),
+	.width(10'd30),
+	.height(B ? 9'd34 : 9'd26),
+	.offset_x(10'd15),
+	.offset_y(9'd13),
 	.center_x(ship_x),
 	.center_y(ship_y),
 	.sin_val(sin_val),
@@ -115,7 +132,7 @@ Draw_Sprite #(
 
 spaceship	spaceship_inst (
 	.clock(clk),
-	.address(sprite_addr),
+	.address(sprite_addr + anim_base),
 	.q(sprite_data)
 );
 

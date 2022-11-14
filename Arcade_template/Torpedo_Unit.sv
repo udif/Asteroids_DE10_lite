@@ -15,9 +15,10 @@ module Torpedo_Unit #(
 	input  [$clog2(HEIGHT)-1:0]pxl_y,
 	input  [$clog2(WIDTH )-1:0]ship_x,
 	input  [$clog2(HEIGHT)-1:0]ship_y,
-    input  vsync,
+    input  vsync, // already in 1-cycle pulse form
     input signed [17:0] sin_val,
     input signed [17:0] cos_val,
+    input [$clog2(90*3)-1:0]anim_base,
     input  fire,
     output fire_out,
     output t_dead,
@@ -59,11 +60,6 @@ localparam X_W = $clog2(WIDTH);
 localparam Y_W = $clog2(HEIGHT);
 localparam XY_W = (X_W > Y_W) ? X_W : Y_W;
 
-localparam ANIM_CNT = 12;
-localparam ANIM_CNT_M1 = ANIM_CNT - 1;
-reg [$clog2(ANIM_CNT)-1:0]anim_cnt;
-reg anim_pulse;
-reg vsync_d;
 reg tx, ty; // temporary overflow flags
 //reg t_fire;
 
@@ -71,41 +67,15 @@ wire Draw_t;
 
 reg fire_deb, fire_deb_test; // debounce
 always @(posedge clk) begin
-    vsync_d <= vsync;
-    anim_pulse <= 1'b0;
-    if (vsync && !vsync_d) begin
+    if (vsync) begin
         fire_deb <= fire_deb_test; // result of debounce
         fire_deb_test <= 1'b1; // try fire pulse every 1/60s
-        if(anim_cnt > 0) 
-            anim_cnt <= anim_cnt - {{($bits(anim_cnt)-1){1'b0}}, 1'b1};
-        else begin
-            anim_cnt <= ANIM_CNT_M1[$bits(anim_cnt)-1:0];
-            anim_pulse <= 1'b1;
-        end
     end else begin
         // any cycle might reset it
         fire_deb_test <= fire_deb_test && fire;
     end
 
 end
-
-// we have 3 sprite cycles
-localparam ANIM_CYCLE = 3;
-localparam ANIM_CYCLE_M1 = ANIM_CYCLE - 1;
-reg [$clog2(ANIM_CYCLE)-1:0]anim_cycle;
-always @(posedge clk)
-    if (anim_pulse)
-        if (anim_cycle)
-            anim_cycle <= anim_cycle - {{($bits(anim_cycle)-1){1'b0}}, 1'b1};
-        else 
-            anim_cycle <= ANIM_CYCLE_M1[$bits(anim_cycle)-1:0];
-
-// calculate base address in ROM of each anim frame
-localparam ANIM_SIZE=90;
-wire [$clog2(ANIM_SIZE*(ANIM_CYCLE-1))-1:0]anim_base =
-    (anim_cycle == 2) ? (2 * ANIM_SIZE) :
-    (anim_cycle == 1) ? (1 * ANIM_SIZE) :
-                        0;
 
 localparam XY_FRACTION = 7; // subpixel fraction bits
 wire signed [1+XY_W+XY_FRACTION-1:0]t_speed = {1'b0, 10'd5,{XY_FRACTION{1'b0}}}; // sign (always 0), int, fraction
@@ -117,8 +87,8 @@ reg	signed [$clog2(HEIGHT)+XY_FRACTION:0]torpedo_yd; // 1 extra bit for sign
 // we subtract 2 because we have 1 redundant sign bit
 // we also move 90 degrees forward: sin=>cos, cos=>-sin (by doing -t_speed)
 // we do it because the torpedo is drawn pointing to the right, not upwards
-wire [$bits(t_speed)+$bits(sin_val)-2:0]torpedo_xd_t = cos_val *  t_speed;
-wire [$bits(t_speed)+$bits(cos_val)-2:0]torpedo_yd_t = sin_val * -t_speed;
+wire [$bits(t_speed)+$bits(sin_val)-2:0]torpedo_xd_t = sin_val * -t_speed;
+wire [$bits(t_speed)+$bits(cos_val)-2:0]torpedo_yd_t = cos_val * -t_speed;
 assign t_dead = t_fire && (tx || ty || (torpedo_x[($bits(torpedo_x) - 1):XY_FRACTION] > WIDTH) || (torpedo_y[($bits(torpedo_y) - 1):XY_FRACTION] > HEIGHT));
 
 // generate sync signal for reading sin/cos output 2 cycles later
@@ -161,7 +131,7 @@ always @(posedge clk or negedge resetN) begin
             // set initial position
             torpedo_x <= {ship_x, {XY_FRACTION{1'b0}}};
             torpedo_y <= {ship_y, {XY_FRACTION{1'b0}}};
-        end else if (t_fire && vsync && !vsync_d) begin
+        end else if (t_fire && vsync) begin
             // update position every vsync (60Hz)
             // we use fractional positioning for smooth movement
             {tx, torpedo_x} <= {1'b0, torpedo_x} + torpedo_xd;
@@ -170,8 +140,8 @@ always @(posedge clk or negedge resetN) begin
         if (fire_deb_d2 && !fire_deb_d3 && !t_fire) begin
             t_fire <= 1'b1;
             // notice we ytake sin/cos val and phase shift 
-            t_sin_val <= sin_val;
-            t_cos_val <= cos_val;
+            t_sin_val <=  cos_val;
+            t_cos_val <= -sin_val;
             // save less fraction bits
             torpedo_xd <= torpedo_xd_t[($bits(sin_val)-1) +: (XY_FRACTION+X_W+1)]; // fraction, int, sign
             torpedo_yd <= torpedo_yd_t[($bits(cos_val)-1) +: (XY_FRACTION+Y_W+1)]; // fraction, int, sign

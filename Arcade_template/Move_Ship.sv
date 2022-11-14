@@ -76,15 +76,15 @@ reg [$clog2(DIVIDER)-1:0]counter;
 // one bit less is due to sin/cos sign bit
 localparam SPEED_W = $bits(sin_val)-1+($clog2(SPEED)+2);
 
-wire signed [SPEED_W-1:0]x_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * cos_val;
-wire signed [SPEED_W-1:0]y_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * sin_val;
+wire signed [SPEED_W-1:0]x_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * sin_val;
+wire signed [SPEED_W-1:0]y_speed_inc = $signed({4'b0, SPEED[$clog2(SPEED):3]}) * cos_val;
 reg  signed [SPEED_W-1:0]x_speed;
 reg  signed [SPEED_W-1:0]y_speed;
 
 //
 // New speed
 //
-wire signed [SPEED_W-1:0]x_speed_new = x_speed + x_speed_inc;
+wire signed [SPEED_W-1:0]x_speed_new = x_speed - x_speed_inc;
 wire signed [SPEED_W-1:0]y_speed_new = y_speed + y_speed_inc;
 
 // Temporary position before we take into account wraparound
