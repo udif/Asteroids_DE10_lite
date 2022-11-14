@@ -407,7 +407,7 @@ CONTENT BEGIN
         digits = ((width*height-1).bit_length()+3)//4
         for j in range(height):  # for each column
             for i in range(width):  # For each row
-                file1.write("{}: ".format(hex(j*height+i)[2:].upper().zfill(digits)))
+                file1.write("{}: ".format(hex(j*width+i)[2:].upper().zfill(digits)))
                 if (SingleBitBitMap):
                     #BW
                     if (pixels[i,j] == OneBitPixelCode) :
