@@ -115,6 +115,8 @@ module Top_template(
 `endif
 );
 
+localparam WIDTH  = 640;
+localparam HEIGHT = 480;
 
 //=======================================================
 //  REG/WIRE declarations
@@ -257,13 +259,19 @@ localparam SCORE_DIGITS = 6;
 reg [SCORE_DIGITS-1:0][3:0]score;
 reg [SCORE_DIGITS-1:0][3:0]score_out;
 
-// 0 ship
-// 1 score top
-// 2 score middle
-// 3 score bottom
-// 4 stars (BG)
-wire [2:0][11:0]RGB;
-wire [1:0]draw;
+// RGB sources
+typedef enum int unsigned {
+	RGB_SCORE,
+	RGB_SHIP,
+	RGB_TORPEDO,
+	RGB_STARS // background, must be the last one!
+} RGB_SRC ;
+
+// how many torpedos at the same time
+localparam T_NUM = 4;
+
+wire [RGB_STARS+T_NUM-1:0][11:0]RGB;
+wire [RGB_STARS+T_NUM-2:0]draw;
 
 
 // Priority mux for the RGB
@@ -272,9 +280,9 @@ Drawing_priority #(
 ) drawing_mux(
 	.clk(clk_25),
 	.resetN(resetN),
-	.RGB(RGB[1:0]),
+	.RGB(RGB),
 	.draw(draw),
-	.RGB_bg(RGB[2]),
+	.RGB_bg(RGB[RGB_STARS+T_NUM-1]),
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level)
@@ -286,11 +294,17 @@ Draw_Stars Draw_Stars_inst(
 	.resetN(resetN),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.Red  (RGB[2][11:8]),
-	.Green(RGB[2][7:4]),
-	.Blue (RGB[2][3:0]),
+	.Red  (RGB[RGB_STARS+T_NUM-1][11:8]),
+	.Green(RGB[RGB_STARS+T_NUM-1][7:4]),
+	.Blue (RGB[RGB_STARS+T_NUM-1][3:0]),
 	.Draw()
 	);
+
+wire signed [17:0]sin_val;
+wire signed [17:0]cos_val;
+
+wire [$clog2(WIDTH )-1:0]ship_x;
+wire [$clog2(HEIGHT)-1:0]ship_y;
 
 // ship unit
 Ship_unit #(
@@ -302,11 +316,15 @@ Ship_unit #(
 	.B(B),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
+	.ship_x(ship_x),
+	.ship_y(ship_y),
 	.wheel(~Wheel), // match rotation direction
-	.Red  (RGB[1][11:8]),
-	.Green(RGB[1][7:4]),
-	.Blue (RGB[1][3:0]),
-	.Draw(draw[1])
+	.sin_val(sin_val),
+	.cos_val(cos_val),
+	.Red  (RGB[RGB_SHIP][11:8]),
+	.Green(RGB[RGB_SHIP][7:4]),
+	.Blue (RGB[RGB_SHIP][3:0]),
+	.Draw(draw[RGB_SHIP])
 	//,.debug_out(debug_out)
 );
 
@@ -315,7 +333,7 @@ score_box #(
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add(draw[0] & draw[1]),
+	.add(|draw[RGB_TORPEDO +: T_NUM] & draw[RGB_SCORE]),
 	.sum(1),
 	.result(score)
 );
@@ -331,9 +349,39 @@ Draw_Score #(
 	.offsetX(10'd0),
 	.offsetY(g*40),
 	.digits(score),
-	.Red  (RGB[0][11:8]),
-	.Green(RGB[0][7:4]),
-	.Blue (RGB[0][3:0]),
-	.Draw(draw[0])
+	.Red  (RGB[RGB_SCORE][11:8]),
+	.Green(RGB[RGB_SCORE][7:4]),
+	.Blue (RGB[RGB_SCORE][3:0]),
+	.Draw(draw[RGB_SCORE])
 );
+
+// How many torpedos in flight
+genvar t;
+
+// We have multiple torpedo instances
+// fire trigger is cascaded so that the next torpedo gets a fire sequence
+// only if the previous torpedo is still flying
+generate
+	wire [T_NUM:0]torpedos;
+	assign torpedos[0] = A;
+	for (t = 0; t < T_NUM ; t = t + 1) begin : tor_insts
+		Torpedo_Unit torpedo_inst (
+			.clk(clk_25),
+			.pxl_x(pxl_x),
+			.pxl_y(pxl_y),
+			.ship_x(ship_x),
+			.ship_y(ship_y),
+			.resetN(resetN),
+			.vsync(v_sync_wire),
+			.sin_val(sin_val),
+			.cos_val(cos_val),
+			.fire(torpedos[t]),
+			.fire_out(torpedos[t+1]),
+			.Red  (RGB[RGB_TORPEDO+t][11:8]),
+			.Green(RGB[RGB_TORPEDO+t][7:4]),
+			.Blue (RGB[RGB_TORPEDO+t][3:0]),
+			.Draw(draw[RGB_TORPEDO+t])
+		);
+	end
+endgenerate
 endmodule

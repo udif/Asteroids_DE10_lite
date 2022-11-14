@@ -6,7 +6,8 @@
 module Draw_Sprite #(
 	// screen size
 	parameter WIDTH=640,
-	parameter HEIGHT=480
+	parameter HEIGHT=480,
+	parameter TRANSPARENT=12'h000
 ) (
 	
 	input clk,
@@ -23,6 +24,9 @@ module Draw_Sprite #(
 	// offset of center from top left
 	input [$clog2(WIDTH )-1:0]offset_x,
 	input [$clog2(HEIGHT)-1:0]offset_y,
+	// center of sprite, if needed
+	output [$clog2(WIDTH )-1:0]center_x,
+	output [$clog2(HEIGHT)-1:0]center_y,
 	// rotation angle, already encoded with sin/cos values
 	input signed [17:0]sin_val,
 	input signed [17:0]cos_val,
@@ -45,8 +49,8 @@ wire in_rectangle;
 
 // All calculations are done with reference to center of figure
 // width , height are divided by 2 using logical right shift by 1, as they are unsigned
-wire signed [$clog2(WIDTH )-1:0]center_x = topLeft_x + {1'b0, width [$clog2(WIDTH )-1:1]};
-wire signed [$clog2(HEIGHT)-1:0]center_y = topLeft_y + {1'b0, height[$clog2(HEIGHT)-1:1]};
+assign center_x = topLeft_x + offset_x;
+assign center_y = topLeft_y + offset_y;
 
 // find offset from **rotation center** of sprite
 // by subtracting width/2 and height/2
@@ -86,9 +90,8 @@ assign in_rectangle =
 	(tl_dxr < width) && // not too right
 	(tl_dyr >= 0) &&    // not too high
 	(tl_dyr < height);  // not too low
-// TODO delay by 2 to match ROM
 
-localparam TANSPERENT = 12'h000;
+reg in_rectangle_d, in_rectangle_d2;
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
@@ -99,8 +102,11 @@ always @(posedge clk or negedge resetN) begin
 	end
 	else begin
 		Drawing <= 0;
-		if (in_rectangle) begin
-			if({sprite_r, sprite_g, sprite_b} != TANSPERENT) begin
+		// delay by 2 cycles to match ROM latency
+		in_rectangle_d <= in_rectangle;
+		in_rectangle_d2 <= in_rectangle_d;
+		if (in_rectangle_d2) begin
+			if({sprite_r, sprite_g, sprite_b} != TRANSPARENT) begin
 				Drawing <= 1;
 				Red_level <= sprite_r;
 				Green_level <= sprite_g;

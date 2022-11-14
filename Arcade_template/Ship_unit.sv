@@ -16,7 +16,11 @@ module Ship_unit #(
 	input		B,
 	input		[$clog2(WIDTH )-1:0]pxl_x,
 	input		[$clog2(HEIGHT)-1:0]pxl_y,
+	output [$clog2(WIDTH )-1:0]ship_x,
+	output [$clog2(HEIGHT)-1:0]ship_y,
 	input    [11:0]    wheel,
+	output signed [17:0] sin_val,
+	output signed [17:0] cos_val,
 	output	[3:0]		Red,
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
@@ -56,9 +60,6 @@ wire	[$clog2(HEIGHT)-1:0]topLeft_y_ship;
 // from which we'll take [17:6]
 // 256 / 0xf4 * 32 = 33.573 => 6'd34
 wire [17:0]wheel_adjusted = wheel * 6'd34;
-	
-wire signed [17:0] sin_val;
-wire signed [17:0] cos_val;
 
 sin_cos sin_cos_inst (
 	.clk(clk),
@@ -100,6 +101,8 @@ Draw_Sprite #(
 	.height(9'd28),
 	.offset_x(10'd12),
 	.offset_y(9'd14),
+	.center_x(ship_x),
+	.center_y(ship_y),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
 	.sprite_addr(sprite_addr),
