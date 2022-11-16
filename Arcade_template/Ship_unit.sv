@@ -97,11 +97,8 @@ always @(posedge clk)
 // calculate base address in ROM of each anim frame
 localparam ANIM_SIZE_SPACESHIP=1020;
 wire [$clog2(ANIM_SIZE_SPACESHIP * (ANIM_CYCLE_SPACESHIP - 1))-1:0]anim_base =
-    !B ? 0: // no engine, no flame animation
-    (anim_cycle_spaceship == 3) ? (3 * ANIM_SIZE_SPACESHIP) :
-    (anim_cycle_spaceship == 2) ? (2 * ANIM_SIZE_SPACESHIP) :
-    (anim_cycle_spaceship == 1) ? (1 * ANIM_SIZE_SPACESHIP) :
-                                 0;
+    ($bits(anim_base))'(!B ? '0: // no engine, no flame animation
+                             (anim_cycle_spaceship * ANIM_SIZE_SPACESHIP));
 
 Draw_Sprite #(
 	.WIDTH(WIDTH),
@@ -122,6 +119,7 @@ Draw_Sprite #(
 	.center_y(ship_y),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
+	.sprite_rd(),
 	.sprite_addr(sprite_addr),
 	.sprite_data(sprite_data),
 	.Red_level(Red),

@@ -166,8 +166,12 @@ always @(posedge clk or negedge resetN) begin
 	else begin
 		counter <= counter + 1'b1;
 		if(collision) begin
+			x <= x_init;
+			y <= y_init;
+			counter <= '0;
+			x_speed <= '0;
+			y_speed <= '0;
 		end
-				
 		if (counter == DIV_LIMIT) begin
 			btn_counter <= btn_counter + 1'b1;
 			if (btn_counter == BTN_DIVIDER_M1[$clog2(BTN_DIVIDER)-1:0]) begin

@@ -31,13 +31,14 @@ module Draw_Sprite #(
 	input signed [17:0]sin_val,
 	input signed [17:0]cos_val,
 	// ROM interface
+	output sprite_rd,
 	output [$clog2(WIDTH * HEIGHT)-1:0]sprite_addr,
 	input [11:0]sprite_data,
 	// RGB output and enable
-	output [3:0]Red_level,
-	output [3:0]Green_level,
-	output [3:0]Blue_level,
-	output      Drawing
+	output reg [3:0]Red_level,
+	output reg [3:0]Green_level,
+	output reg [3:0]Blue_level,
+	output reg      Drawing
 	
 	);
 
@@ -92,6 +93,7 @@ assign in_rectangle =
 	(tl_dyr < height);  // not too low
 
 reg in_rectangle_d, in_rectangle_d2;
+assign sprite_rd = in_rectangle;
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
@@ -106,7 +108,7 @@ always @(posedge clk or negedge resetN) begin
 		in_rectangle_d <= in_rectangle;
 		in_rectangle_d2 <= in_rectangle_d;
 		if (in_rectangle_d2) begin
-			if({sprite_r, sprite_g, sprite_b} != TRANSPARENT) begin
+			if ({sprite_r, sprite_g, sprite_b} != TRANSPARENT) begin
 				Drawing <= 1;
 				Red_level <= sprite_r;
 				Green_level <= sprite_g;

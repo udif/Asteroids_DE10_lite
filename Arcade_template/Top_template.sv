@@ -172,7 +172,7 @@ assign VGA_R = vga_r_wire;
 assign VGA_G = vga_g_wire;
 assign VGA_B = vga_b_wire;
 
-wire resetN = ~Select;
+wire resetN = ~Start;
 
 
 // Screens control (LCD and VGA)
@@ -287,31 +287,27 @@ always @(posedge clk_25)
             anim_cycle_torpedo <= ANIM_CYCLE_TORPEDO_M1[$bits(anim_cycle_torpedo)-1:0];
 // calculate base address in ROM of each anim frame
 localparam ANIM_SIZE_TORPEDO=90;
-wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]anim_base =
-    (anim_cycle_torpedo == 2) ? (2 * ANIM_SIZE_TORPEDO) :
-    (anim_cycle_torpedo == 1) ? (1 * ANIM_SIZE_TORPEDO) :
-                                 0;
+wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]anim_base = ($bits(anim_base))'(anim_cycle_torpedo * ANIM_SIZE_TORPEDO);
 
 localparam DEBUG_SIZE=1;
 
 //wire [DEBUG_SIZE-1:0][63:0]debug_out;
 localparam SCORE_DIGITS = 6;
 reg [SCORE_DIGITS-1:0][3:0]score;
-reg [SCORE_DIGITS-1:0][3:0]score_out;
 
+// how many torpedos at the same time
+localparam T_NUM = 4;
 // RGB sources
 typedef enum int unsigned {
 	RGB_SCORE,
 	RGB_SHIP,
+	RGB_LIVES,
 	RGB_TORPEDO,
-	RGB_STARS // background, must be the last one!
+	RGB_STARS = RGB_TORPEDO + T_NUM // background, must be the last one!
 } RGB_SRC ;
 
-// how many torpedos at the same time
-localparam T_NUM = 4;
-
-wire [RGB_STARS+T_NUM-1:0][11:0]RGB;
-wire [RGB_STARS+T_NUM-2:0]draw;
+wire [RGB_STARS:0][11:0]RGB;
+wire [RGB_STARS-1:0]draw;
 
 
 // Priority mux for the RGB
@@ -322,7 +318,7 @@ Drawing_priority #(
 	.resetN(resetN),
 	.RGB(RGB),
 	.draw(draw),
-	.RGB_bg(RGB[RGB_STARS+T_NUM-1]),
+	.RGB_bg(RGB[RGB_STARS]),
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level)
@@ -334,14 +330,14 @@ Draw_Stars Draw_Stars_inst(
 	.resetN(resetN),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
-	.Red  (RGB[RGB_STARS+T_NUM-1][11:8]),
-	.Green(RGB[RGB_STARS+T_NUM-1][7:4]),
-	.Blue (RGB[RGB_STARS+T_NUM-1][3:0]),
+	.Red  (RGB[RGB_STARS][11:8]),
+	.Green(RGB[RGB_STARS][7:4]),
+	.Blue (RGB[RGB_STARS][3:0]),
 	.Draw()
 	);
 
-wire signed [17:0]sin_val;
-wire signed [17:0]cos_val;
+wire signed [17:0]ship_sin_val;
+wire signed [17:0]ship_cos_val;
 
 wire [$clog2(WIDTH )-1:0]ship_x;
 wire [$clog2(HEIGHT)-1:0]ship_y;
@@ -352,15 +348,15 @@ Ship_unit #(
 ) ship_unit_inst(	
 	.clk(clk_25),
 	.resetN(resetN),
-	.collision(1'b0),
+	.collision(die),
 	.B(B),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
 	.ship_x(ship_x),
 	.ship_y(ship_y),
 	.wheel(~Wheel), // match rotation direction
-	.sin_val(sin_val),
-	.cos_val(cos_val),
+	.sin_val(ship_sin_val),
+	.cos_val(ship_cos_val),
 	.anim_pulse(anim_pulse),
 	.Red  (RGB[RGB_SHIP][11:8]),
 	.Green(RGB[RGB_SHIP][7:4]),
@@ -374,12 +370,11 @@ score_box #(
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add(|draw[RGB_TORPEDO +: T_NUM] & draw[RGB_SCORE]),
+	.add((|draw[RGB_TORPEDO +: T_NUM]) & draw[RGB_SCORE]),
 	.sum(1),
 	.result(score)
 );
 
-genvar g;
 // ship unit
 Draw_Score #(
 	.DIGITS(SCORE_DIGITS)
@@ -388,7 +383,7 @@ Draw_Score #(
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
 	.offsetX(10'd0),
-	.offsetY(g*40),
+	.offsetY(9'd0),
 	.digits(score),
 	.Red  (RGB[RGB_SCORE][11:8]),
 	.Green(RGB[RGB_SCORE][7:4]),
@@ -397,7 +392,7 @@ Draw_Score #(
 );
 
 // How many torpedos in flight
-genvar t;
+genvar t; // torpedos
 
 // We have multiple torpedo instances
 // fire trigger is cascaded so that the next torpedo gets a fire sequence
@@ -414,8 +409,8 @@ generate
 			.ship_y(ship_y),
 			.resetN(resetN),
 			.vsync(v_sync_wire && !v_sync_wire_d),
-			.sin_val(sin_val),
-			.cos_val(cos_val),
+			.sin_val(ship_sin_val),
+			.cos_val(ship_cos_val),
 			.anim_base(anim_base),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1]),
@@ -426,4 +421,76 @@ generate
 		);
 	end
 endgenerate
+
+// How many "lives" do we have
+localparam NUM_LIVES = 3;
+localparam MAX_NUM_LIVES = 10;
+
+wire bonus = (score[1:0] == (8'b0)) && (score > 0);
+wire die = draw[RGB_SHIP] && draw[RGB_SCORE]; // for the time being
+
+// "lives" counter
+wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
+lives_counter #(
+	.NUM_LIVES(NUM_LIVES),
+	.MAX_NUM_LIVES(MAX_NUM_LIVES)
+) (
+	.clk(clk_25),
+	.resetN(resetN),
+	.die(die),
+	.bonus(bonus),
+	.game_over(),
+	.lives(lives)
+);
+
+// "lives" display
+// we use a single sprite but replicate it multiple times on the same line
+// by dynamically changing topLeft_x
+wire  [$clog2(WIDTH * HEIGHT)-1:0]spaceship_lives_addr;
+wire [11:0]spaceship_lives_data;
+localparam LIVES_X_OFFSET = 18*SCORE_DIGITS+10;
+
+// distance between ship icons for # of lives display (1 << LIVES_X_SPACING_LOG2)
+localparam LIVES_X_SPACING_LOG2 = 5;
+// This only works because the ship sprites are spaced 32 pixels apart (1<<5)
+// we deduce which "live" we plan to display by looking at the X position of the scan
+wire [$clog2(MAX_NUM_LIVES+1)+LIVES_X_SPACING_LOG2-1:0]curr_life_t = ($bits(curr_life_t))'(pxl_x - LIVES_X_OFFSET);
+wire [$clog2(MAX_NUM_LIVES+1)-1:0]curr_life = curr_life_t[LIVES_X_SPACING_LOG2 +: $clog2(MAX_NUM_LIVES+1)];
+wire draw_life;
+
+Draw_Sprite #(
+	.WIDTH(WIDTH),
+	.HEIGHT(HEIGHT),
+	.TRANSPARENT(12'h0f0)
+) lives_inst (
+	.clk(clk_25),
+	.resetN(resetN),
+	.pxl_x(pxl_x),
+	.pxl_y(pxl_y),
+	.topLeft_x(LIVES_X_OFFSET + {curr_life, (LIVES_X_SPACING_LOG2)'(0)}),
+	.topLeft_y(2),
+	.width(10'd30),
+	.height(9'd26),
+	.offset_x(10'd15),
+	.offset_y(9'd13),
+	.center_x(),
+	.center_y(),
+	.sin_val(18'h0), // straight up, sin(90)
+	.cos_val(18'h1ffff), // cos(90)
+	.sprite_rd(),
+	.sprite_addr(spaceship_lives_addr),
+	.sprite_data(spaceship_lives_data),
+	.Red_level  (RGB[RGB_LIVES][11:8]),
+	.Green_level(RGB[RGB_LIVES][7:4]),
+	.Blue_level (RGB[RGB_LIVES][3:0]),
+	.Drawing   (draw_life)
+	);
+assign draw[RGB_LIVES] = draw_life && (curr_life < lives);
+
+spaceship	spaceship_lives_inst (
+	.clock(clk_25),
+	.address(spaceship_lives_addr),
+	.q(spaceship_lives_data)
+);
+
 endmodule
