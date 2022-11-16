@@ -26,7 +26,7 @@ BCD_add #(
 	.digits(score),
     .sum(sum),
 	.result(score_out),
-	.start(add && !busy),
+	.start(add & (~busy | done)),
 	.done(done)
 );
 
@@ -40,8 +40,11 @@ always @(posedge clk or negedge resetN)
     else
         busy <= add | busy & ~done;
 
-always@(posedge clk) begin
-    score <= done ? score_out : score;
+always@(posedge clk or negedge resetN) begin
+    if (~resetN)
+        score <= '0;
+    else
+        score <= done ? score_out : score;
 end
 
 endmodule
