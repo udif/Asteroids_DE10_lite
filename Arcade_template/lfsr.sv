@@ -1,5 +1,5 @@
 module lfsr #(
-    parameter LFSR=10'h481
+    parameter LFSR=11'h481
 ) (
     input clk,
     input init,
