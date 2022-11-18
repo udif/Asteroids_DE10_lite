@@ -22,7 +22,7 @@ module Move_Ship #(
 	input clk,
 	input resetN,
 	input collision,
-	input B,
+	input Accelerator,
     // rotation angle, already encoded with sin/cos values
 	input signed [17:0] sin_val,
 	input signed [17:0] cos_val,
@@ -177,7 +177,7 @@ always @(posedge clk or negedge resetN) begin
 			if (btn_counter == BTN_DIVIDER_M1[$clog2(BTN_DIVIDER)-1:0]) begin
 				$display("reset");
 				btn_counter <= '0;
-				if (B && speed_update_ok) begin
+				if (Accelerator && speed_update_ok) begin
 					$display("speed inc");
 					x_speed <= x_speed_new;
 					y_speed <= y_speed_new;

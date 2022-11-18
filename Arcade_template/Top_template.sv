@@ -300,6 +300,7 @@ localparam T_NUM = 4;
 // RGB sources
 typedef enum int unsigned {
 	RGB_SCORE,
+	RGB_GAMEOVER,
 	RGB_SHIP,
 	RGB_LIVES,
 	RGB_TORPEDO,
@@ -341,6 +342,7 @@ wire signed [17:0]ship_cos_val;
 
 wire [$clog2(WIDTH )-1:0]ship_x;
 wire [$clog2(HEIGHT)-1:0]ship_y;
+wire draw_ship;
 
 // ship unit
 Ship_unit #(
@@ -348,8 +350,9 @@ Ship_unit #(
 ) ship_unit_inst(	
 	.clk(clk_25),
 	.resetN(resetN),
+	.game_over(game_over),
 	.collision(die),
-	.B(B),
+	.Accelerator(B),
 	.pxl_x(pxl_x),
 	.pxl_y(pxl_y),
 	.ship_x(ship_x),
@@ -361,9 +364,10 @@ Ship_unit #(
 	.Red  (RGB[RGB_SHIP][11:8]),
 	.Green(RGB[RGB_SHIP][7:4]),
 	.Blue (RGB[RGB_SHIP][3:0]),
-	.Draw(draw[RGB_SHIP])
+	.Draw(draw_ship)
 	//,.debug_out(debug_out)
 );
+assign draw[RGB_SHIP] = draw_ship & ~game_over;
 
 score_box #(
 	.DIGITS(SCORE_DIGITS)
@@ -431,6 +435,7 @@ wire die = draw[RGB_SHIP] && draw[RGB_SCORE]; // for the time being
 
 // "lives" counter
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
+wire game_over;
 lives_counter #(
 	.NUM_LIVES(NUM_LIVES),
 	.MAX_NUM_LIVES(MAX_NUM_LIVES)
@@ -439,7 +444,7 @@ lives_counter #(
 	.resetN(resetN),
 	.die(die),
 	.bonus(bonus),
-	.game_over(),
+	.game_over(game_over),
 	.lives(lives)
 );
 
@@ -491,6 +496,51 @@ spaceship	spaceship_lives_inst (
 	.clock(clk_25),
 	.address(spaceship_lives_addr),
 	.q(spaceship_lives_data)
+);
+
+localparam GAMEOVER_WIDTH=277;
+localparam GAMEOVER_HEIGHT=48;
+localparam GAMEOVER_MASK=12'h000;
+wire draw_gameover;
+wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
+wire [1:0]gameover_data;
+
+Draw_Sprite #(
+	.WIDTH(WIDTH),
+	.HEIGHT(HEIGHT),
+	.TRANSPARENT(GAMEOVER_MASK)
+) gameover_inst (
+	.clk(clk_25),
+	.resetN(resetN),
+	.pxl_x(pxl_x),
+	.pxl_y(pxl_y),
+	.topLeft_x((WIDTH-GAMEOVER_WIDTH)/2),
+	.topLeft_y((HEIGHT-GAMEOVER_HEIGHT)/2),
+	.width(GAMEOVER_WIDTH),
+	.height(GAMEOVER_HEIGHT),
+	.offset_x(GAMEOVER_WIDTH/2),
+	.offset_y(GAMEOVER_HEIGHT/2),
+	.center_x(),
+	.center_y(),
+	.sin_val(18'h0), // straight up, sin(90)
+	.cos_val(18'h1ffff), // cos(90)
+	.sprite_rd(),
+	.sprite_addr(gameover_addr),
+	// convert 2 bit grey level data into 12 bit RGB
+	.sprite_data({3{gameover_data, 2'b0}}),
+	.Red_level  (RGB[RGB_GAMEOVER][11:8]),
+	.Green_level(RGB[RGB_GAMEOVER][7:4]),
+	.Blue_level (RGB[RGB_GAMEOVER][3:0]),
+	.Drawing   (draw_gameover)
+);
+
+// convert 2-bit red only to 4 bit RGB
+assign draw[RGB_GAMEOVER] = draw_gameover && game_over;
+
+gameover gameover_rom_inst (
+	.clock(clk_25),
+	.address(gameover_addr),
+	.q(gameover_data)
 );
 
 endmodule

@@ -12,8 +12,9 @@ module Ship_unit #(
 	
 	input		clk,
 	input		resetN,
+	input		game_over,
 	input		collision,
-	input		B,
+	input		Accelerator,
 	input		[$clog2(WIDTH )-1:0]pxl_x,
 	input		[$clog2(HEIGHT)-1:0]pxl_y,
 	output [$clog2(WIDTH )-1:0]ship_x,
@@ -58,7 +59,7 @@ wire	[$clog2(HEIGHT)-1:0]topLeft_y_ship;
 // we need to multiply the 12 bit ADC by 6 bit to get 18 bit adjusted value
 // from which we'll take [17:6]
 // 256 / 0xf4 * 32 = 33.573 => 6'd34
-wire [17:0]wheel_adjusted = wheel * 6'd34;
+wire [17:0]wheel_adjusted = game_over ? '0 : wheel * 6'd34;
 
 sin_cos sin_cos_inst (
 	.clk(clk),
@@ -75,7 +76,7 @@ Move_Ship #(
 	.clk(clk),
 	.resetN(resetN),
 	.collision(collision),
-	.B(B),
+	.Accelerator(Accelerator && !game_over),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
 	.topLeft_x(topLeft_x_ship),
@@ -97,7 +98,7 @@ always @(posedge clk)
 // calculate base address in ROM of each anim frame
 localparam ANIM_SIZE_SPACESHIP=1020;
 wire [$clog2(ANIM_SIZE_SPACESHIP * (ANIM_CYCLE_SPACESHIP - 1))-1:0]anim_base =
-    ($bits(anim_base))'(!B ? '0: // no engine, no flame animation
+    ($bits(anim_base))'(!(Accelerator && !game_over) ? '0: // no engine, no flame animation
                              (anim_cycle_spaceship * ANIM_SIZE_SPACESHIP));
 
 Draw_Sprite #(
@@ -112,7 +113,7 @@ Draw_Sprite #(
 	.topLeft_x(topLeft_x_ship),
 	.topLeft_y(topLeft_y_ship),
 	.width(10'd30),
-	.height(B ? 9'd34 : 9'd26),
+	.height((Accelerator && !game_over) ? 9'd34 : 9'd26),
 	.offset_x(10'd15),
 	.offset_y(9'd13),
 	.center_x(ship_x),
