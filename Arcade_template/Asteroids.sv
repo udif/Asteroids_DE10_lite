@@ -20,7 +20,7 @@
 `define ENABLE_ARDUINO
 `define ENABLE_GPIO
 
-module Top_template(
+module Asteroids(
 
 	//////////// ADC CLOCK: 3.3-V LVTTL //////////
 `ifdef ENABLE_ADC_CLOCK
