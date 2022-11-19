@@ -300,6 +300,7 @@ localparam T_NUM = 4;
 // RGB sources
 typedef enum int unsigned {
 	RGB_SCORE,
+	RGB_ASTEROIDS,
 	RGB_GAMEOVER,
 	RGB_SHIP,
 	RGB_LIVES,
@@ -439,7 +440,7 @@ wire game_over;
 lives_counter #(
 	.NUM_LIVES(NUM_LIVES),
 	.MAX_NUM_LIVES(MAX_NUM_LIVES)
-) (
+) lives_counter_inst (
 	.clk(clk_25),
 	.resetN(resetN),
 	.die(die),
@@ -541,6 +542,61 @@ gameover gameover_rom_inst (
 	.clock(clk_25),
 	.address(gameover_addr),
 	.q(gameover_data)
+);
+
+reg [7:0]start_cnt;
+always @(posedge clk_25 or negedge resetN) begin
+	if (~resetN)
+		start_cnt <= '0;
+    else if (v_sync_wire && !v_sync_wire_d) begin
+        if (start_cnt != '1)
+            start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
+    end
+end
+
+localparam ASTEROIDS_WIDTH=481;
+localparam ASTEROIDS_HEIGHT=80;
+localparam ASTEROIDS_MASK=12'h000;
+wire draw_asteroids;
+wire  [$clog2(WIDTH * HEIGHT)-1:0]asteroids_addr;
+wire [8:0]asteroids_data;
+
+Draw_Sprite #(
+	.WIDTH(WIDTH),
+	.HEIGHT(HEIGHT),
+	.TRANSPARENT(ASTEROIDS_MASK)
+) asteroids_inst (
+	.clk(clk_25),
+	.resetN(resetN),
+	.pxl_x(pxl_x),
+	.pxl_y(pxl_y),
+	.topLeft_x((WIDTH-ASTEROIDS_WIDTH)/2),
+	.topLeft_y((HEIGHT-ASTEROIDS_HEIGHT)/2),
+	.width(ASTEROIDS_WIDTH),
+	.height(ASTEROIDS_HEIGHT),
+	.offset_x(ASTEROIDS_WIDTH/2),
+	.offset_y(ASTEROIDS_HEIGHT/2),
+	.center_x(),
+	.center_y(),
+	.sin_val(18'h0), // straight up, sin(90)
+	.cos_val({1'b0, start_cnt, 9'h1ff}), // scaled cos(90)
+	.sprite_rd(),
+	.sprite_addr(asteroids_addr),
+	// convert 2 bit grey level data into 12 bit RGB
+	.sprite_data({asteroids_data[8:1], {4{asteroids_data[0]}}}), // RGB 4:4:1
+	.Red_level  (RGB[RGB_ASTEROIDS][11:8]),
+	.Green_level(RGB[RGB_ASTEROIDS][7:4]),
+	.Blue_level (RGB[RGB_ASTEROIDS][3:0]),
+	.Drawing   (draw_asteroids)
+);
+
+// convert 2-bit red only to 4 bit RGB
+assign draw[RGB_ASTEROIDS] = draw_asteroids && (start_cnt != '1);
+
+asteroids_start asteroids_start_inst (
+	.clock(clk_25),
+	.address(asteroids_addr),
+	.q(asteroids_data)
 );
 
 endmodule
