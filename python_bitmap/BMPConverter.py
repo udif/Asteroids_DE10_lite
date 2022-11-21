@@ -385,8 +385,8 @@ def writeVerilog():
 
     # write BMP for additional editing
 
-    outJPGFile = open(FileName + "_piexl.jpg", "w")
-    imgBMP.save(outJPGFile)
+    outPNGFile = open(FileName + "_pixel.png", "wb")
+    imgBMP.save(outPNGFile)
 
 # ____________________________________________________________________________________________________
 def writeMif():
