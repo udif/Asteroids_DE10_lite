@@ -7,7 +7,8 @@ module Draw_Sprite #(
 	// screen size
 	parameter WIDTH=640,
 	parameter HEIGHT=480,
-	parameter TRANSPARENT=12'h000
+	parameter TRANSPARENT=12'h000,
+	parameter SINCOS_FRACTION=17
 ) (
 	
 	input clk,

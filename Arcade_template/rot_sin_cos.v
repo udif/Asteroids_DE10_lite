@@ -1,5 +1,5 @@
 module rot_sin_cos #(
-    parameter PHASE_W = 10,
+    parameter SINCOS_FRACTION=17,
     parameter DATA_W = 18
 ) (
     // input x,y
@@ -25,7 +25,7 @@ wire signed [DATA_W+18-1:0] ry_t = xsin_val + ycos_val;
 // result is 18 bits, the question is what bits we take
 // since output is rotated x,y we only need 10 bits
 // we add the 9th bit to round to nearest int
-assign rx = rx_t[17 +: DATA_W] + {{(DATA_W-1){1'b0}}, rx_t[16]};
-assign ry = ry_t[17 +: DATA_W] + {{(DATA_W-1){1'b0}}, ry_t[16]};
+assign rx = rx_t[SINCOS_FRACTION +: DATA_W] + {{(DATA_W-1){1'b0}}, rx_t[SINCOS_FRACTION-1]};
+assign ry = ry_t[SINCOS_FRACTION +: DATA_W] + {{(DATA_W-1){1'b0}}, ry_t[SINCOS_FRACTION-1]};
 
 endmodule

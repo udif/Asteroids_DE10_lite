@@ -174,9 +174,13 @@ assign VGA_B = vga_b_wire;
 
 wire resetN = ~Start;
 
+localparam DEBUG_SIZE=1;
+//wire [DEBUG_SIZE-1:0][63:0]debug_out;
 
 // Screens control (LCD and VGA)
 Screens_dispaly #(
+	// Extra 2 cycle latency since all Draw_Sprite() modules
+	// Use a ROM with 2 cycle latency for RGB data
 	.RGB_LAT(2)
 ) Screen_control(
 	.clk_25(clk_25),
@@ -275,26 +279,6 @@ always @(posedge clk_25) begin
     end
 end
 
-// we have 3 sprite cycles
-localparam ANIM_CYCLE_TORPEDO = 3;
-localparam ANIM_CYCLE_TORPEDO_M1 = ANIM_CYCLE_TORPEDO - 1;
-reg [$clog2(ANIM_CYCLE_TORPEDO)-1:0]anim_cycle_torpedo;
-always @(posedge clk_25)
-    if (anim_pulse)
-        if (anim_cycle_torpedo)
-            anim_cycle_torpedo <= anim_cycle_torpedo - {{($bits(anim_cycle_torpedo)-1){1'b0}}, 1'b1};
-        else 
-            anim_cycle_torpedo <= ANIM_CYCLE_TORPEDO_M1[$bits(anim_cycle_torpedo)-1:0];
-// calculate base address in ROM of each anim frame
-localparam ANIM_SIZE_TORPEDO=90;
-wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]anim_base = ($bits(anim_base))'(anim_cycle_torpedo * ANIM_SIZE_TORPEDO);
-
-localparam DEBUG_SIZE=1;
-
-//wire [DEBUG_SIZE-1:0][63:0]debug_out;
-localparam SCORE_DIGITS = 6;
-reg [SCORE_DIGITS-1:0][3:0]score;
-
 // how many torpedos at the same time
 localparam T_NUM = 4;
 // RGB sources
@@ -370,17 +354,25 @@ Ship_unit #(
 );
 assign draw[RGB_SHIP] = draw_ship & ~game_over;
 
+//
+// Score accumulator in BCD
+//
+localparam SCORE_DIGITS = 6;
+reg [SCORE_DIGITS-1:0][3:0]score;
+
 score_box #(
 	.DIGITS(SCORE_DIGITS)
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
 	.add((|draw[RGB_TORPEDO +: T_NUM]) & draw[RGB_SCORE]),
-	.sum(1),
+	.sum(1), // How much to add (use BCD!)
 	.result(score)
 );
 
-// ship unit
+//
+// Score display
+//
 Draw_Score #(
 	.DIGITS(SCORE_DIGITS)
 ) score_inst(	
@@ -395,6 +387,24 @@ Draw_Score #(
 	.Blue (RGB[RGB_SCORE][3:0]),
 	.Draw(draw[RGB_SCORE])
 );
+
+//
+// Torpedo display
+//
+
+// For the torpedo we have 3 sprite cycles
+localparam ANIM_CYCLE_TORPEDO = 3;
+localparam ANIM_CYCLE_TORPEDO_M1 = ANIM_CYCLE_TORPEDO - 1;
+reg [$clog2(ANIM_CYCLE_TORPEDO)-1:0]anim_cycle_torpedo;
+always @(posedge clk_25)
+    if (anim_pulse)
+        if (anim_cycle_torpedo)
+            anim_cycle_torpedo <= anim_cycle_torpedo - {{($bits(anim_cycle_torpedo)-1){1'b0}}, 1'b1};
+        else 
+            anim_cycle_torpedo <= ANIM_CYCLE_TORPEDO_M1[$bits(anim_cycle_torpedo)-1:0];
+// calculate base address in ROM of each anim frame
+localparam ANIM_SIZE_TORPEDO=90;
+wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]torpedo_anim_base = ($bits(torpedo_anim_base))'(anim_cycle_torpedo * ANIM_SIZE_TORPEDO);
 
 // How many torpedos in flight
 genvar t; // torpedos
@@ -416,7 +426,7 @@ generate
 			.vsync(v_sync_wire && !v_sync_wire_d),
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
-			.anim_base(anim_base),
+			.anim_base(torpedo_anim_base),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1]),
 			.Red  (RGB[RGB_TORPEDO+t][11:8]),
@@ -449,7 +459,10 @@ lives_counter #(
 	.lives(lives)
 );
 
+//
 // "lives" display
+//
+
 // we use a single sprite but replicate it multiple times on the same line
 // by dynamically changing topLeft_x
 wire  [$clog2(WIDTH * HEIGHT)-1:0]spaceship_lives_addr;
@@ -499,6 +512,10 @@ spaceship	spaceship_lives_inst (
 	.q(spaceship_lives_data)
 );
 
+//
+// "Game Over" banner display
+//
+
 localparam GAMEOVER_WIDTH=277;
 localparam GAMEOVER_HEIGHT=48;
 localparam GAMEOVER_MASK=12'h000;
@@ -535,7 +552,6 @@ Draw_Sprite #(
 	.Drawing   (draw_gameover)
 );
 
-// convert 2-bit red only to 4 bit RGB
 assign draw[RGB_GAMEOVER] = draw_gameover && game_over;
 
 gameover gameover_rom_inst (
@@ -544,6 +560,9 @@ gameover gameover_rom_inst (
 	.q(gameover_data)
 );
 
+//
+// Opening screen
+//
 reg [7:0]start_cnt;
 always @(posedge clk_25 or negedge resetN) begin
 	if (~resetN)
@@ -590,7 +609,6 @@ Draw_Sprite #(
 	.Drawing   (draw_asteroids)
 );
 
-// convert 2-bit red only to 4 bit RGB
 assign draw[RGB_ASTEROIDS] = draw_asteroids && (start_cnt != '1);
 
 asteroids_start asteroids_start_inst (
