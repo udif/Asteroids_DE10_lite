@@ -309,18 +309,24 @@ Drawing_priority #(
 	.Green_level(Green_level),
 	.Blue_level(Blue_level)
 	);
-	
+
+vga gen   ( /* .clk(clk_25) */ ) ; // carry initial hsync, vsync, pxl_x, pxl_y, RGB
+vga stars ( /* .clk(clk_25) */ ) ;
+
+assign gen.pxl_x = pxl_x;
+assign gen.pxl_y = pxl_y;
+assign RGB[RGB_STARS][11:8] = stars.red;
+assign RGB[RGB_STARS][7:4 ] = stars.green;
+assign RGB[RGB_STARS][3:0]  = stars.blue;
+
 // Starfield
 Draw_Stars Draw_Stars_inst(
 	.clk(clk_25),
 	.resetN(resetN),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
-	.Red  (RGB[RGB_STARS][11:8]),
-	.Green(RGB[RGB_STARS][7:4]),
-	.Blue (RGB[RGB_STARS][3:0]),
+	.i(gen),
+	.o(stars),
 	.Draw()
-	);
+);
 
 wire signed [17:0]ship_sin_val;
 wire signed [17:0]ship_cos_val;

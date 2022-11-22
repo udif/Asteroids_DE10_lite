@@ -435,6 +435,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[32]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[33]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[34]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[35]
+set_global_assignment -name SYSTEMVERILOG_FILE VGA.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Asteroids.sv
 set_global_assignment -name SYSTEMVERILOG_FILE lives_counter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Torpedo_Unit.sv

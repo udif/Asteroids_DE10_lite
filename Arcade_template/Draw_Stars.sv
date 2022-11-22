@@ -2,21 +2,16 @@
 // Sep. 2022
 // ***********************************************
 
-
 module Draw_Stars #(
 	parameter WIDTH=640,
 	parameter HEIGHT=480
 ) (
 	
-	input           clk,
-	input           resetN,
-	input [$clog2(WIDTH )-1:0]pxl_x,
-	input [$clog2(HEIGHT)-1:0]pxl_y,
-	output reg [3:0]Red,
-	output reg [3:0]Green,
-	output reg [3:0]Blue,
-	output          Draw
-	
+	input    clk,
+	input    resetN,
+    vga.in   i,
+    vga.out  o,
+	output   Draw
 	);
 
 localparam LFSR = 32'h481;
@@ -37,20 +32,20 @@ reg en, init;
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
-		Red <= 4'h0;
-		Green <= 4'h0;
-		Blue <= 4'h0;
+		o.red <= 4'h0;
+		o.green <= 4'h0;
+		o.blue <= 4'h0;
 		Draw <= 0;
         cnt <= 0;
         en <= 1'b0;
         init <= 1'b0;
 	end
 	else begin
-        Red <= 4'hf;
-        Green <= 4'hf;
-        Blue <= 4'hf;
+        o.red <= 4'hf;
+        o.green <= 4'hf;
+        o.blue <= 4'hf;
         en <= (cnt == 1) | init;
-        if ((pxl_x == 0) && (pxl_y == 0)) begin
+        if ((i.pxl_x == 0) && (i.pxl_y == 0)) begin
             Draw <= '0;
             en <= '0;
             cnt <= '0;
@@ -58,9 +53,9 @@ always @(posedge clk or negedge resetN) begin
         end else if (cnt > 0) begin
             init <= 0;
             // countdown to next star
-            Red <= 4'h0;
-            Green <= 4'h0;
-            Blue <= 4'h0;
+            o.red <= 4'h0;
+            o.green <= 4'h0;
+            o.blue <= 4'h0;
             Draw <= '0;
             cnt <= cnt - {{($bits(cnt)-1){1'b0}}, 1'b1};
         end else begin
