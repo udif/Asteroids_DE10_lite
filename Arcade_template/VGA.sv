@@ -12,16 +12,23 @@ interface vga #(
 );/* (
     input logic clk
 );*/
-    logic hsync;
-    logic vsync;
-    logic [$clog2(WIDTH )-1:0]pxl_x;
-    logic [$clog2(HEIGHT)-1:0]pxl_y;
-    logic [3:0]red;
-    logic [3:0]green;
-    logic [3:0]blue;
+    typedef struct packed {
+        logic hsync;
+        logic vsync;
+        logic [$clog2(WIDTH )-1:0]pxl_x;
+        logic [$clog2(HEIGHT)-1:0]pxl_y;
+        logic [3:0]red;
+        logic [3:0]green;
+        logic [3:0]blue;
+        logic en;
+    } vga_t;
 
-    modport in  (input  hsync, vsync, pxl_x, pxl_y, red, green, blue);
-    modport out (output hsync, vsync, pxl_x, pxl_y, red, green, blue);
+    // we are wrapping all the interface signals in a typedef so we can access all the signals at once
+    // since there are issues with assigning an interface to another
+    vga_t t;
+
+    modport in  (input  t);
+    modport out (output t);
 
 endinterface: vga
 

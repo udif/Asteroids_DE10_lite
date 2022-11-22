@@ -313,11 +313,11 @@ Drawing_priority #(
 vga gen   ( /* .clk(clk_25) */ ) ; // carry initial hsync, vsync, pxl_x, pxl_y, RGB
 vga stars ( /* .clk(clk_25) */ ) ;
 
-assign gen.pxl_x = pxl_x;
-assign gen.pxl_y = pxl_y;
-assign RGB[RGB_STARS][11:8] = stars.red;
-assign RGB[RGB_STARS][7:4 ] = stars.green;
-assign RGB[RGB_STARS][3:0]  = stars.blue;
+assign gen.t.pxl_x = pxl_x;
+assign gen.t.pxl_y = pxl_y;
+assign RGB[RGB_STARS][11:8] = stars.t.red;
+assign RGB[RGB_STARS][7:4 ] = stars.t.green;
+assign RGB[RGB_STARS][3:0]  = stars.t.blue;
 
 // Starfield
 Draw_Stars Draw_Stars_inst(

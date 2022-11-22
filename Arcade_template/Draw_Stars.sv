@@ -32,20 +32,20 @@ reg en, init;
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
-		o.red <= 4'h0;
-		o.green <= 4'h0;
-		o.blue <= 4'h0;
+		o.t.red <= 4'h0;
+		o.t.green <= 4'h0;
+		o.t.blue <= 4'h0;
 		Draw <= 0;
         cnt <= 0;
         en <= 1'b0;
         init <= 1'b0;
 	end
 	else begin
-        o.red <= 4'hf;
-        o.green <= 4'hf;
-        o.blue <= 4'hf;
+        o.t.red <= 4'hf;
+        o.t.green <= 4'hf;
+        o.t.blue <= 4'hf;
         en <= (cnt == 1) | init;
-        if ((i.pxl_x == 0) && (i.pxl_y == 0)) begin
+        if ((i.t.pxl_x == 0) && (i.t.pxl_y == 0)) begin
             Draw <= '0;
             en <= '0;
             cnt <= '0;
@@ -53,9 +53,9 @@ always @(posedge clk or negedge resetN) begin
         end else if (cnt > 0) begin
             init <= 0;
             // countdown to next star
-            o.red <= 4'h0;
-            o.green <= 4'h0;
-            o.blue <= 4'h0;
+            o.t.red <= 4'h0;
+            o.t.green <= 4'h0;
+            o.t.blue <= 4'h0;
             Draw <= '0;
             cnt <= cnt - {{($bits(cnt)-1){1'b0}}, 1'b1};
         end else begin
