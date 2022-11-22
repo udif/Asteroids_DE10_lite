@@ -450,7 +450,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE Draw_Sprite.sv
 set_global_assignment -name VERILOG_FILE rot_sin_cos.v
 set_global_assignment -name SYSTEMVERILOG_FILE sin_cos.sv
 set_global_assignment -name QIP_FILE adc/synthesis/adc.qip
-set_global_assignment -name VERILOG_FILE vga_controller.v
+set_global_assignment -name SYSTEMVERILOG_FILE vga_controller.sv
 set_global_assignment -name SYSTEMVERILOG_FILE seven_segment.sv
 set_global_assignment -name QIP_FILE pll25.qip
 set_global_assignment -name SYSTEMVERILOG_FILE lcd_ctrl.sv
