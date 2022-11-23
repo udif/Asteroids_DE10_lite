@@ -157,6 +157,12 @@ wire	Up;
 wire	Down;
 wire [11:0]	Wheel;
 
+//
+// The VGA chain starts with a black screen and ends with a complete picture
+//
+vga vga_chain_start();
+vga vga_chain_end();
+vga vga_out();
 
 // Screens Assigns
 assign ARDUINO_IO[7:0]	= lcd_db;
@@ -188,19 +194,23 @@ Screens_dispaly #(
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
 	.Red(vga_r_wire),
 	.Green(vga_g_wire),
 	.Blue(vga_b_wire),
 	.h_sync(h_sync_wire),
 	.v_sync(v_sync_wire),
+	.vga_chain_start(vga_chain_start),
+	.vga_chain_end(vga_chain_end),
+	.vga_out(vga_out),
 	.lcd_db(lcd_db),
 	.lcd_reset(lcd_reset),
 	.lcd_wr(lcd_wr),
 	.lcd_d_c(lcd_d_c),
 	.lcd_rd(lcd_rd)
 );
+
+assign pxl_x = vga_chain_start.t.pxl_x;
+assign pxl_y = vga_chain_start.t.pxl_y;
 
 
 // Utilities

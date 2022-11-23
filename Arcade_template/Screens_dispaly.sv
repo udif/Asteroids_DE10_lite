@@ -15,13 +15,14 @@ module Screens_dispaly # (
 	input		[3:0]		Red_level,
 	input		[3:0]		Green_level,
 	input		[3:0]		Blue_level,
-	output	[$clog2(WIDTH )-1:0]pxl_x,
-	output	[$clog2(HEIGHT)-1:0]pxl_y,
 	output	[3:0]		Red,
 	output	[3:0]		Green,
 	output	[3:0]		Blue,
 	output				h_sync,
 	output				v_sync,
+	vga.in		vga_chain_end,   // back from all display units
+	vga.out		vga_chain_start, // start chain with only sync & pixel x/y signals
+	vga.out		vga_out,         // now send to VGA connector
 	output	[7:0]		lcd_db,
 	output				lcd_reset,
 	output				lcd_wr,
@@ -33,8 +34,6 @@ module Screens_dispaly # (
 	wire	[3:0]		Green_i;
 	wire	[3:0]		Blue_i;
 	
-vga vga_chain_start();
-
 // VGA controller
  vga_controller VGA_interface (
 	.pixel_clk  (clk_25),
@@ -70,8 +69,6 @@ assign Green_i = (vga_chain_start.t.en == 1'b1) ? Green_level : 4'b0000 ;
 assign Blue_i = (vga_chain_start.t.en == 1'b1) ? Blue_level : 4'b0000 ;
 
 // outputs assigns
-assign pxl_x = vga_chain_start.t.pxl_x;
-assign pxl_y = vga_chain_start.t.pxl_y;
 assign Red = Red_i;
 assign Green = Green_i;
 assign Blue = Blue_i;
