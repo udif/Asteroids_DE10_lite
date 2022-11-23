@@ -10,9 +10,8 @@ module Draw_Stars #(
 	input    clk,
 	input    resetN,
     vga.in  vga_chain_in,
-    vga.out vga_chain_out,
-	output   Draw
-	);
+    vga.out vga_chain_out
+);
 
 localparam LFSR = 32'h481;
 wire [$clog2(LFSR)-2:0]lfsr;
@@ -36,7 +35,7 @@ always @(posedge clk or negedge resetN) begin
 		vga_chain_out.t.red <= 4'h0;
 		vga_chain_out.t.green <= 4'h0;
 		vga_chain_out.t.blue <= 4'h0;
-		Draw <= 0;
+		vga_chain_out.t.en <= 1'b0;
         cnt <= 0;
         en <= 1'b0;
         init <= 1'b0;
@@ -48,7 +47,7 @@ always @(posedge clk or negedge resetN) begin
         vga_chain_out.t.blue <= 4'hf;
         en <= (cnt == 1) | init;
         if ((vga_chain_in.t.pxl_x == 0) && (vga_chain_in.t.pxl_y == 0)) begin
-            Draw <= '0;
+            vga_chain_out.t.en <= 1'b0;
             en <= '0;
             cnt <= '0;
             init <= 1;
@@ -58,12 +57,12 @@ always @(posedge clk or negedge resetN) begin
             vga_chain_out.t.red <= 4'h0;
             vga_chain_out.t.green <= 4'h0;
             vga_chain_out.t.blue <= 4'h0;
-            Draw <= '0;
+            vga_chain_out.t.en <= 1'b0;
             cnt <= cnt - {{($bits(cnt)-1){1'b0}}, 1'b1};
         end else begin
             init <= 0;
             cnt <= lfsr;
-            Draw <= 1;
+            vga_chain_out.t.en <= 1'b1;
 		end
 	end
 end

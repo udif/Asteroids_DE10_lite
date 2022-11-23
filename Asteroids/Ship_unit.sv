@@ -22,8 +22,8 @@ module Ship_unit #(
 	input    [11:0]    wheel,
 	output signed [17:0] sin_val,
 	output signed [17:0] cos_val,
-	input anim_pulse,
-	output	Draw
+	input draw_mask,
+	input anim_pulse
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 	);
 
@@ -117,10 +117,10 @@ Draw_Sprite #(
 	.center_y(ship_y),
 	.sin_val(sin_val),
 	.cos_val(cos_val),
+	.draw_mask(draw_mask),
 	.sprite_rd(),
 	.sprite_addr(sprite_addr),
 	.sprite_data(sprite_data),
-	.Drawing(Draw)
 	);
 
 spaceship	spaceship_inst (

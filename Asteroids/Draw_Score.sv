@@ -13,7 +13,7 @@ module Draw_Score #(
     input [$clog2(WIDTH )-1:0]offsetX,
     input [$clog2(HEIGHT)-1:0]offsetY,
     input  logic [DIGITS*4-1:0] digits, // digit to display
-    output reg      Draw
+    input draw_mask
 );
 
 logic [3:0]red;
@@ -41,6 +41,7 @@ wire [4:0]digit_x_next;
 reg  [4:0]digit_x;
 wire [5:0]digit_index_next;
 reg [5:0]digit_index; // how many digits
+reg Draw;
 
 wire [$clog2(WIDTH )-1:0]loc_x = vga_chain_in.t.pxl_x - offsetX;
 wire [$clog2(HEIGHT)-1:0]loc_y = vga_chain_in.t.pxl_y - offsetY;
@@ -65,7 +66,7 @@ always @(posedge clk) begin
     // digit 1 must blank at columns 0,1
     // digit 2 must blank at columns 2,3
     // etc.
-    Draw_b2 <= ~digit_x_next[4] && (digit_index_next < DIGITS[5:0]);
+    Draw_b2 <= ~digit_x_next[4] && (digit_index_next < DIGITS[5:0]) && draw_mask;
     Draw_b1 <= Draw_b2 && (~|loc_y[$bits(loc_y)-1:5]);
     // Draw is delayed by 2 cycles due to ROM access latency
     Draw    <= (loc_x > 2) && Draw_b1; // mask first two bits here due to pipeline
@@ -74,9 +75,10 @@ end
 
 always_comb begin
 	vga_chain_out.t = vga_chain_in.t;
-	vga_chain_out.t.red = red;
-	vga_chain_out.t.green = green;
-	vga_chain_out.t.blue = blue;
+	vga_chain_out.t.red   = Draw ? red   : vga_chain_in.t.red;
+	vga_chain_out.t.green = Draw ? green : vga_chain_in.t.green;
+	vga_chain_out.t.blue  = Draw ? blue  : vga_chain_in.t.blue;
+	vga_chain_out.t.en    = Draw;
 end
 
 endmodule

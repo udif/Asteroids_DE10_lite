@@ -18,13 +18,13 @@ module Torpedo_Unit #(
     input  vsync, // already in 1-cycle pulse form
     input signed [17:0] sin_val,
     input signed [17:0] cos_val,
+    input draw_mask,
     input [$clog2(90*3)-1:0]anim_base,
     input  fire,
     output fire_out,
     output t_dead,
     output reg t_fire,
-    output fire_deb_out,
-	output	Draw
+    output fire_deb_out
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 	);
 
@@ -60,8 +60,6 @@ localparam XY_W = (X_W > Y_W) ? X_W : Y_W;
 reg tx, ty; // temporary overflow flags
 //reg t_fire;
 
-wire Draw_t;
-
 reg fire_deb, fire_deb_test; // debounce
 always @(posedge clk) begin
     if (vsync) begin
@@ -95,8 +93,7 @@ always @(posedge clk) begin
     fire_deb_d2 <= fire_deb_d1;
     fire_deb_d3 <= fire_deb_d2;
 end
-// Draw only if torpedo is flying
-assign Draw = Draw_t && t_fire;
+
 // cascade torpedos, shoot next one only if this one is already flying
 assign fire_out = fire_deb && t_fire_out;
 assign fire_deb_out = fire_deb;
@@ -165,10 +162,10 @@ Draw_Sprite #(
     .offset_y(9'd2),
     .sin_val(t_sin_val),
     .cos_val(t_cos_val),
+    .draw_mask(draw_mask && t_fire), // Draw only if torpedo is flying
     .sprite_addr(sprite_addr),
     .sprite_data(sprite_data),
-    .Drawing(Draw_t)
-    );
+);
 
 torpedo	torpedo_inst (
     .clock(clk),

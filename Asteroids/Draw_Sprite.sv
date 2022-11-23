@@ -30,13 +30,13 @@ module Draw_Sprite #(
 	// rotation angle, already encoded with sin/cos values
 	input signed [17:0]sin_val,
 	input signed [17:0]cos_val,
+	// additional mask for enabling/disabling the pixel draw
+	input draw_mask,
 	// ROM interface
 	output sprite_rd,
 	output [$clog2(WIDTH * HEIGHT)-1:0]sprite_addr,
-	input [11:0]sprite_data,
-	output reg      Drawing
-	
-	);
+	input [11:0]sprite_data
+);
 
 localparam X_W = $clog2(WIDTH);
 localparam Y_W = $clog2(HEIGHT);
@@ -47,6 +47,7 @@ wire in_rectangle;
 logic [3:0]red;
 logic [3:0]green;
 logic [3:0]blue;
+logic Drawing;
 
 // All calculations are done with reference to center of figure
 // width , height are divided by 2 using logical right shift by 1, as they are unsigned
@@ -105,11 +106,11 @@ always @(posedge clk or negedge resetN) begin
 	else begin
 		Drawing <= 0;
 		// delay by 2 cycles to match ROM latency
-		in_rectangle_d <= in_rectangle;
+		in_rectangle_d <= in_rectangle && draw_mask;
 		in_rectangle_d2 <= in_rectangle_d;
 		if (in_rectangle_d2) begin
 			if ({sprite_r, sprite_g, sprite_b} != TRANSPARENT) begin
-				Drawing <= 1;
+				Drawing <= 1'b1;
 				red <= sprite_r;
 				green <= sprite_g;
 				blue <= sprite_b;
@@ -120,9 +121,10 @@ end
 
 always_comb begin
 	vga_chain_out.t = vga_chain_in.t;
-	vga_chain_out.t.red = red;
-	vga_chain_out.t.green = green;
-	vga_chain_out.t.blue = blue;
+	vga_chain_out.t.red   = Drawing ? red   : vga_chain_in.t.red;
+	vga_chain_out.t.green = Drawing ? green : vga_chain_in.t.green;
+	vga_chain_out.t.blue  = Drawing ? blue  : vga_chain_in.t.blue;
+	vga_chain_out.t.en    = Drawing;
 end
 
 endmodule

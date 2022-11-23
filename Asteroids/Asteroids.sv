@@ -323,7 +323,6 @@ Draw_Stars Draw_Stars_inst(
 	.resetN(resetN),
 	.vga_chain_in(vga_chain_start),
 	.vga_chain_out(vga_chain_stars),
-	.Draw()
 );
 
 wire signed [17:0]ship_sin_val;
@@ -331,7 +330,6 @@ wire signed [17:0]ship_cos_val;
 
 wire [$clog2(WIDTH )-1:0]ship_x;
 wire [$clog2(HEIGHT)-1:0]ship_y;
-wire draw_ship;
 
 vga vga_chain_ship ( /* .clk(clk_25) */ ) ;
 
@@ -351,11 +349,11 @@ Ship_unit #(
 	.wheel(~Wheel), // match rotation direction
 	.sin_val(ship_sin_val),
 	.cos_val(ship_cos_val),
+	.draw_mask(~game_over),
 	.anim_pulse(anim_pulse),
-	.Draw(draw_ship)
 	//,.debug_out(debug_out)
 );
-assign draw[RGB_SHIP] = draw_ship & ~game_over;
+assign draw[RGB_SHIP] = vga_chain_ship.t.en;
 assign RGB[RGB_SHIP][11:8] = vga_chain_ship.t.red;
 assign RGB[RGB_SHIP][7:4]  = vga_chain_ship.t.green;
 assign RGB[RGB_SHIP][3:0]  = vga_chain_ship.t.blue;
@@ -390,9 +388,9 @@ Draw_Score #(
 	.offsetX(10'd0),
 	.offsetY(9'd0),
 	.digits(score),
-	.Draw(draw[RGB_SCORE])
+	.draw_mask(~game_over)
 );
-//assign draw[RGB_SCORE] = draw_ship & ~game_over;
+assign draw[RGB_SCORE] = vga_chain_score.t.en;
 assign  RGB[RGB_SCORE][11:8] = vga_chain_score.t.red;
 assign  RGB[RGB_SCORE][7:4]  = vga_chain_score.t.green;
 assign  RGB[RGB_SCORE][3:0]  = vga_chain_score.t.blue;
@@ -437,12 +435,12 @@ generate
 			.vsync(v_sync_pulse),
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
+			.draw_mask(1'b1),
 			.anim_base(torpedo_anim_base),
 			.fire(torpedos[t]),
-			.fire_out(torpedos[t+1]),
-			.Draw(draw[RGB_TORPEDO+t])
+			.fire_out(torpedos[t+1])
 		);
-		//assign draw[RGB_TORPEDO+t] = ;
+		assign draw[RGB_TORPEDO+t] = vga_chain_torpedos[t+1].t.en;
 		assign  RGB[RGB_TORPEDO+t][11:8] = vga_chain_torpedos[t+1].t.red;
 		assign  RGB[RGB_TORPEDO+t][7:4]  = vga_chain_torpedos[t+1].t.green;
 		assign  RGB[RGB_TORPEDO+t][3:0]  = vga_chain_torpedos[t+1].t.blue;
@@ -487,7 +485,6 @@ localparam LIVES_X_SPACING_LOG2 = 5;
 // we deduce which "live" we plan to display by looking at the X position of the scan
 wire [$clog2(MAX_NUM_LIVES+1)+LIVES_X_SPACING_LOG2-1:0]curr_life_t = ($bits(curr_life_t))'(pxl_x - LIVES_X_OFFSET);
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]curr_life = curr_life_t[LIVES_X_SPACING_LOG2 +: $clog2(MAX_NUM_LIVES+1)];
-wire draw_life;
 
 vga vga_chain_lives ( /* .clk(clk_25) */ ) ;
 
@@ -510,12 +507,12 @@ Draw_Sprite #(
 	.center_y(),
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val(18'h1ffff), // cos(90)
+	.draw_mask(curr_life < lives),
 	.sprite_rd(),
 	.sprite_addr(spaceship_lives_addr),
 	.sprite_data(spaceship_lives_data),
-	.Drawing   (draw_life)
 	);
-assign draw[RGB_LIVES] = draw_life && (curr_life < lives);
+assign draw[RGB_LIVES] = vga_chain_lives.t.en;
 assign  RGB[RGB_LIVES][11:8] = vga_chain_lives.t.red;
 assign  RGB[RGB_LIVES][7:4]  = vga_chain_lives.t.green;
 assign  RGB[RGB_LIVES][3:0]  = vga_chain_lives.t.blue;
@@ -533,7 +530,6 @@ spaceship	spaceship_lives_inst (
 localparam GAMEOVER_WIDTH=277;
 localparam GAMEOVER_HEIGHT=48;
 localparam GAMEOVER_MASK=12'h000;
-wire draw_gameover;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
@@ -558,14 +554,14 @@ Draw_Sprite #(
 	.center_y(),
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val(18'h1ffff), // cos(90)
+	.draw_mask(game_over),
 	.sprite_rd(),
 	.sprite_addr(gameover_addr),
 	// convert 2 bit grey level data into 12 bit RGB
-	.sprite_data({3{gameover_data, 2'b0}}),
-	.Drawing   (draw_gameover)
+	.sprite_data({3{gameover_data, 2'b0}})
 );
 
-assign draw[RGB_GAMEOVER] = draw_gameover && game_over;
+assign draw[RGB_GAMEOVER] = vga_chain_gameover.t.en;
 assign  RGB[RGB_GAMEOVER][11:8] = vga_chain_gameover.t.red;
 assign  RGB[RGB_GAMEOVER][7:4]  = vga_chain_gameover.t.green;
 assign  RGB[RGB_GAMEOVER][3:0]  = vga_chain_gameover.t.blue;
@@ -615,14 +611,14 @@ Draw_Sprite #(
 	.center_y(),
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val({1'b0, start_cnt, 9'h1ff}), // scaled cos(90)
+	.draw_mask(start_cnt != '1),
 	.sprite_rd(),
 	.sprite_addr(asteroids_addr),
 	// convert 2 bit grey level data into 12 bit RGB
-	.sprite_data({asteroids_data[8:1], {4{asteroids_data[0]}}}), // RGB 4:4:1
-	.Drawing   (draw_asteroids)
+	.sprite_data({asteroids_data[8:1], {4{asteroids_data[0]}}}) // RGB 4:4:1
 );
 
-assign draw[RGB_ASTEROIDS] = draw_asteroids && (start_cnt != '1);
+assign draw[RGB_ASTEROIDS] = vga_chain_end.t.en;
 assign  RGB[RGB_ASTEROIDS][11:8] = vga_chain_end.t.red;
 assign  RGB[RGB_ASTEROIDS][7:4]  = vga_chain_end.t.green;
 assign  RGB[RGB_ASTEROIDS][3:0]  = vga_chain_end.t.blue;
