@@ -13,13 +13,10 @@ module vga_controller #(
    parameter v_pulse    = 2,     // vertical pulse
    parameter v_bp       = 33,    // vertical back porch
    parameter v_pol      = 1'b0   // vertical sync polarity (1 = positive, 0 = negative)
-) ( input pixel_clk,           // Pixel clock
+) (
+   input pixel_clk,           // Pixel clock
    input reset_n,             // Active low synchronous reset
-   output reg h_sync,         // horizontal sync signal
-   output reg v_sync,         // vertical sync signal
-   output reg disp_ena,       // display enable (0 = all colors must be blank)
-   output reg [$clog2(h_pixels)-1:0] column,  // horizontal pixel coordinate
-   output reg [$clog2(v_pixels)-1:0] row      // vertical pixel coordinate
+   vga   vga_gen
 );
 
    // Get total number of row and column pixel clocks
@@ -35,11 +32,12 @@ module vga_controller #(
       if (reset_n == 1'b0) begin
          h_count  <= 0;
          v_count  <= 0;
-         h_sync   <= ~ h_pol;
-         v_sync   <= ~ v_pol;
-         disp_ena <= 1'b0;
-         column   <= 0;
-         row      <= 0;
+         vga_gen.t       <= '0;
+         vga_gen.t.hsync <= ~ h_pol;
+         vga_gen.t.vsync <= ~ v_pol;
+         vga_gen.t.en    <= 1'b0;
+         vga_gen.t.pxl_x <= 0;
+         vga_gen.t.pxl_y <= 0;
       end else begin
 
          // Pixel Counters
@@ -56,32 +54,32 @@ module vga_controller #(
 
          // Horizontal Sync Signal
          if ( (h_count < h_pixels + h_fp) || (h_count > h_pixels + h_fp + h_pulse) ) begin
-            h_sync <= ~ h_pol;
+            vga_gen.t.hsync <= ~ h_pol;
          end else begin
-            h_sync <= h_pol;
+            vga_gen.t.hsync <= h_pol;
          end
 
          // Vertical Sync Signal
          if ( (v_count < v_pixels + v_fp) || (v_count > v_pixels + v_fp + v_pulse) ) begin
-            v_sync <= ~ v_pol;
+            vga_gen.t.vsync <= ~ v_pol;
          end else begin
-            v_sync <= v_pol;
+            vga_gen.t.vsync <= v_pol;
          end
 
          // Update Pixel Coordinates
          if (h_count < h_pixels) begin
-            column <= h_count[$clog2(h_pixels)-1:0];
+            vga_gen.t.pxl_x <= h_count[$clog2(h_pixels)-1:0];
          end
 
          if (v_count < v_pixels) begin
-            row <= v_count[$clog2(v_pixels)-1:0];
+            vga_gen.t.pxl_y <= v_count[$clog2(v_pixels)-1:0];
          end
 
          // Set display enable output
          if (h_count < h_pixels && v_count < v_pixels) begin
-            disp_ena <= 1'b1;
+            vga_gen.t.en <= 1'b1;
          end else begin
-            disp_ena <= 1'b0;
+            vga_gen.t.en <= 1'b0;
          end
       end
    end
