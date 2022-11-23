@@ -15,17 +15,14 @@ module Ship_unit #(
 	input		game_over,
 	input		collision,
 	input		Accelerator,
-	input		[$clog2(WIDTH )-1:0]pxl_x,
-	input		[$clog2(HEIGHT)-1:0]pxl_y,
+	vga.in		vga_chain_in,
+	vga.out		vga_chain_out,
 	output [$clog2(WIDTH )-1:0]ship_x,
 	output [$clog2(HEIGHT)-1:0]ship_y,
 	input    [11:0]    wheel,
 	output signed [17:0] sin_val,
 	output signed [17:0] cos_val,
 	input anim_pulse,
-	output	[3:0]		Red,
-	output	[3:0]		Green,
-	output	[3:0]		Blue,
 	output	Draw
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 	);
@@ -54,7 +51,11 @@ module Ship_unit #(
 
 wire	[$clog2(WIDTH )-1:0]topLeft_x_ship;
 wire	[$clog2(HEIGHT)-1:0]topLeft_y_ship;
-	
+
+logic [3:0]red;
+logic [3:0]green;
+logic [3:0]blue;
+
 // The analog output seems to be in the range 0x00 - 0xF4
 // we need to multiply the 12 bit ADC by 6 bit to get 18 bit adjusted value
 // from which we'll take [17:6]
@@ -108,8 +109,8 @@ Draw_Sprite #(
 ) draw_inst2(
 	.clk(clk),
 	.resetN(resetN),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.pxl_x(vga_chain_in.t.pxl_x),
+	.pxl_y(vga_chain_in.t.pxl_y),
 	.topLeft_x(topLeft_x_ship),
 	.topLeft_y(topLeft_y_ship),
 	.width(10'd30),
@@ -123,11 +124,18 @@ Draw_Sprite #(
 	.sprite_rd(),
 	.sprite_addr(sprite_addr),
 	.sprite_data(sprite_data),
-	.Red_level(Red),
-	.Green_level(Green),
-	.Blue_level(Blue),
+	.Red_level(red),
+	.Green_level(green),
+	.Blue_level(blue),
 	.Drawing(Draw)
 	);
+
+always_comb begin
+	vga_chain_out.t = vga_chain_in.t;
+	vga_chain_out.t.red = red;
+	vga_chain_out.t.green = green;
+	vga_chain_out.t.blue = blue;
+end
 
 spaceship	spaceship_inst (
 	.clock(clk),

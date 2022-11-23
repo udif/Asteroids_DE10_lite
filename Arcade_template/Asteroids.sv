@@ -169,9 +169,9 @@ assign ARDUINO_IO[12]	= lcd_buzzer;
 assign ARDUINO_IO[13]	= lcd_status_led;
 assign VGA_HS = vga_out.t.hsync;
 assign VGA_VS = vga_out.t.vsync;
-assign VGA_R = vga_out.t.red;
-assign VGA_G = vga_out.t.green;
-assign VGA_B = vga_out.t.blue;
+assign VGA_R  = vga_out.t.red;
+assign VGA_G  = vga_out.t.green;
+assign VGA_B  = vga_out.t.blue;
 
 wire resetN = ~Start;
 
@@ -311,21 +311,18 @@ Drawing_priority #(
 	.Blue_level(Blue_level)
 	);
 
-vga gen   ( /* .clk(clk_25) */ ) ; // carry initial hsync, vsync, pxl_x, pxl_y, RGB
-vga stars ( /* .clk(clk_25) */ ) ;
+vga vga_chain_stars ( /* .clk(clk_25) */ ) ;
 
-assign gen.t.pxl_x = pxl_x;
-assign gen.t.pxl_y = pxl_y;
-assign RGB[RGB_STARS][11:8] = stars.t.red;
-assign RGB[RGB_STARS][7:4 ] = stars.t.green;
-assign RGB[RGB_STARS][3:0]  = stars.t.blue;
+assign RGB[RGB_STARS][11:8] = vga_chain_stars.t.red;
+assign RGB[RGB_STARS][7:4 ] = vga_chain_stars.t.green;
+assign RGB[RGB_STARS][3:0]  = vga_chain_stars.t.blue;
 
 // Starfield
 Draw_Stars Draw_Stars_inst(
 	.clk(clk_25),
 	.resetN(resetN),
-	.i(gen),
-	.o(stars),
+	.vga_chain_in(vga_chain_start),
+	.vga_chain_out(vga_chain_stars),
 	.Draw()
 );
 
@@ -336,6 +333,8 @@ wire [$clog2(WIDTH )-1:0]ship_x;
 wire [$clog2(HEIGHT)-1:0]ship_y;
 wire draw_ship;
 
+vga vga_chain_ship ( /* .clk(clk_25) */ ) ;
+
 // ship unit
 Ship_unit #(
 	.DEBUG_SIZE(DEBUG_SIZE)
@@ -345,21 +344,21 @@ Ship_unit #(
 	.game_over(game_over),
 	.collision(die),
 	.Accelerator(B),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.vga_chain_in(vga_chain_stars),
+	.vga_chain_out(vga_chain_ship),
 	.ship_x(ship_x),
 	.ship_y(ship_y),
 	.wheel(~Wheel), // match rotation direction
 	.sin_val(ship_sin_val),
 	.cos_val(ship_cos_val),
 	.anim_pulse(anim_pulse),
-	.Red  (RGB[RGB_SHIP][11:8]),
-	.Green(RGB[RGB_SHIP][7:4]),
-	.Blue (RGB[RGB_SHIP][3:0]),
 	.Draw(draw_ship)
 	//,.debug_out(debug_out)
 );
 assign draw[RGB_SHIP] = draw_ship & ~game_over;
+assign RGB[RGB_SHIP][11:8] = vga_chain_ship.t.red;
+assign RGB[RGB_SHIP][7:4]  = vga_chain_ship.t.green;
+assign RGB[RGB_SHIP][3:0]  = vga_chain_ship.t.blue;
 
 //
 // Score accumulator in BCD
@@ -380,20 +379,23 @@ score_box #(
 //
 // Score display
 //
+vga vga_chain_score ( /* .clk(clk_25) */ ) ;
+
 Draw_Score #(
 	.DIGITS(SCORE_DIGITS)
 ) score_inst(	
 	.clk(clk_25),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.vga_chain_in(vga_chain_ship),
+	.vga_chain_out(vga_chain_score),
 	.offsetX(10'd0),
 	.offsetY(9'd0),
 	.digits(score),
-	.Red  (RGB[RGB_SCORE][11:8]),
-	.Green(RGB[RGB_SCORE][7:4]),
-	.Blue (RGB[RGB_SCORE][3:0]),
 	.Draw(draw[RGB_SCORE])
 );
+//assign draw[RGB_SCORE] = draw_ship & ~game_over;
+assign  RGB[RGB_SCORE][11:8] = vga_chain_score.t.red;
+assign  RGB[RGB_SCORE][7:4]  = vga_chain_score.t.green;
+assign  RGB[RGB_SCORE][3:0]  = vga_chain_score.t.blue;
 
 //
 // Torpedo display

@@ -8,18 +8,17 @@ module Draw_Score #(
     parameter  [11:0] digit_color = 12'hfff //set the color of the digit
 ) (
     input clk,
-    input [$clog2(WIDTH )-1:0]pxl_x,
-    input [$clog2(HEIGHT)-1:0]pxl_y,
+    vga.in  vga_chain_in,
+    vga.out vga_chain_out,
     input [$clog2(WIDTH )-1:0]offsetX,
     input [$clog2(HEIGHT)-1:0]offsetY,
     input  logic [DIGITS*4-1:0] digits, // digit to display
-    output reg [3:0]Red,
-    output reg [3:0]Green,
-    output reg [3:0]Blue,
     output reg      Draw
 );
 
-
+logic [3:0]red;
+logic [3:0]green;
+logic [3:0]blue;
 
 wire [12:0]numbers_addr;
 wire numbers_data;
@@ -43,8 +42,8 @@ reg  [4:0]digit_x;
 wire [5:0]digit_index_next;
 reg [5:0]digit_index; // how many digits
 
-wire [$clog2(WIDTH )-1:0]loc_x = pxl_x - offsetX;
-wire [$clog2(HEIGHT)-1:0]loc_y = pxl_y - offsetY;
+wire [$clog2(WIDTH )-1:0]loc_x = vga_chain_in.t.pxl_x - offsetX;
+wire [$clog2(HEIGHT)-1:0]loc_y = vga_chain_in.t.pxl_y - offsetY;
 
 // we count to 18 due to 2 pixel space between each digit
 assign digit_x_next  = (loc_x == 0)     ? 5'd0 : // start of line
@@ -70,7 +69,14 @@ always @(posedge clk) begin
     Draw_b1 <= Draw_b2 && (~|loc_y[$bits(loc_y)-1:5]);
     // Draw is delayed by 2 cycles due to ROM access latency
     Draw    <= (loc_x > 2) && Draw_b1; // mask first two bits here due to pipeline
-    {Red, Green, Blue} <= numbers_data ? digit_color : 12'h000;
+    {red, green, blue} <= numbers_data ? digit_color : 12'h000;
+end
+
+always_comb begin
+	vga_chain_out.t = vga_chain_in.t;
+	vga_chain_out.t.red = red;
+	vga_chain_out.t.green = green;
+	vga_chain_out.t.blue = blue;
 end
 
 endmodule

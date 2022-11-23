@@ -9,8 +9,8 @@ module Draw_Stars #(
 	
 	input    clk,
 	input    resetN,
-    vga.in   i,
-    vga.out  o,
+    vga.in  vga_chain_in,
+    vga.out vga_chain_out,
 	output   Draw
 	);
 
@@ -32,20 +32,22 @@ reg en, init;
 
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
-		o.t.red <= 4'h0;
-		o.t.green <= 4'h0;
-		o.t.blue <= 4'h0;
+		vga_chain_out.t <= '0;
+		vga_chain_out.t.red <= 4'h0;
+		vga_chain_out.t.green <= 4'h0;
+		vga_chain_out.t.blue <= 4'h0;
 		Draw <= 0;
         cnt <= 0;
         en <= 1'b0;
         init <= 1'b0;
 	end
 	else begin
-        o.t.red <= 4'hf;
-        o.t.green <= 4'hf;
-        o.t.blue <= 4'hf;
+        vga_chain_out.t <= vga_chain_in.t;
+        vga_chain_out.t.red <= 4'hf;
+        vga_chain_out.t.green <= 4'hf;
+        vga_chain_out.t.blue <= 4'hf;
         en <= (cnt == 1) | init;
-        if ((i.t.pxl_x == 0) && (i.t.pxl_y == 0)) begin
+        if ((vga_chain_in.t.pxl_x == 0) && (vga_chain_in.t.pxl_y == 0)) begin
             Draw <= '0;
             en <= '0;
             cnt <= '0;
@@ -53,9 +55,9 @@ always @(posedge clk or negedge resetN) begin
         end else if (cnt > 0) begin
             init <= 0;
             // countdown to next star
-            o.t.red <= 4'h0;
-            o.t.green <= 4'h0;
-            o.t.blue <= 4'h0;
+            vga_chain_out.t.red <= 4'h0;
+            vga_chain_out.t.green <= 4'h0;
+            vga_chain_out.t.blue <= 4'h0;
             Draw <= '0;
             cnt <= cnt - {{($bits(cnt)-1){1'b0}}, 1'b1};
         end else begin
