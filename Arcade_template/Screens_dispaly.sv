@@ -15,9 +15,6 @@ module Screens_dispaly # (
 	input		[3:0]		Red_level,
 	input		[3:0]		Green_level,
 	input		[3:0]		Blue_level,
-	output	[3:0]		Red,
-	output	[3:0]		Green,
-	output	[3:0]		Blue,
 	output				h_sync,
 	output				v_sync,
 	vga.in		vga_chain_end,   // back from all display units
@@ -29,10 +26,6 @@ module Screens_dispaly # (
 	output				lcd_d_c,
 	output				lcd_rd
 	);
-	
-	wire	[3:0]		Red_i;
-	wire	[3:0]		Green_i;
-	wire	[3:0]		Blue_i;
 	
 // VGA controller
  vga_controller VGA_interface (
@@ -51,9 +44,9 @@ lcd_ctrl LCD_interface(
 	.pxl_y(vga_chain_start.t.pxl_y),
 	.h_sync(0), // not used
 	.v_sync(0), // not used
-	.red_in(Red_i),
-	.green_in(Green_i),
-	.blue_in(Blue_i),
+	.red_in(vga_out.t.red),
+	.green_in(vga_out.t.green),
+	.blue_in(vga_out.t.blue),
 	.sw_0(1), // used for reset
 	.lcd_db(lcd_db),
 	.lcd_reset(lcd_reset),
@@ -62,16 +55,10 @@ lcd_ctrl LCD_interface(
 	.lcd_rd(lcd_rd)
 );
 
-
 // screen out display picker / enable
-assign Red_i = (vga_chain_start.t.en == 1'b1) ? Red_level : 4'b0000 ;
-assign Green_i = (vga_chain_start.t.en == 1'b1) ? Green_level : 4'b0000 ;
-assign Blue_i = (vga_chain_start.t.en == 1'b1) ? Blue_level : 4'b0000 ;
-
-// outputs assigns
-assign Red = Red_i;
-assign Green = Green_i;
-assign Blue = Blue_i;
+assign vga_out.t.red   = (vga_chain_start.t.en == 1'b1) ? Red_level : 4'b0000 ;
+assign vga_out.t.green = (vga_chain_start.t.en == 1'b1) ? Green_level : 4'b0000 ;
+assign vga_out.t.blue  = (vga_chain_start.t.en == 1'b1) ? Blue_level : 4'b0000 ;
 
 // delay h/v sync as requested
 generate

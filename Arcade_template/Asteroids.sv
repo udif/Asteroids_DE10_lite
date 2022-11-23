@@ -130,9 +130,6 @@ wire				clk_100;
 // Screens signals
 wire	[31:0]	pxl_x;
 wire	[31:0]	pxl_y;
-wire	[3:0]		vga_r_wire;
-wire	[3:0]		vga_g_wire;
-wire	[3:0]		vga_b_wire;
 wire	[7:0]		lcd_db;
 wire				lcd_reset;
 wire				lcd_wr;
@@ -172,9 +169,9 @@ assign ARDUINO_IO[12]	= lcd_buzzer;
 assign ARDUINO_IO[13]	= lcd_status_led;
 assign VGA_HS = vga_out.t.hsync;
 assign VGA_VS = vga_out.t.vsync;
-assign VGA_R = vga_r_wire;
-assign VGA_G = vga_g_wire;
-assign VGA_B = vga_b_wire;
+assign VGA_R = vga_out.t.red;
+assign VGA_G = vga_out.t.green;
+assign VGA_B = vga_out.t.blue;
 
 wire resetN = ~Start;
 
@@ -192,9 +189,6 @@ Screens_dispaly #(
 	.Red_level(Red_level),
 	.Green_level(Green_level),
 	.Blue_level(Blue_level),
-	.Red(vga_r_wire),
-	.Green(vga_g_wire),
-	.Blue(vga_b_wire),
 	.vga_chain_start(vga_chain_start),
 	.vga_chain_end(vga_chain_end),
 	.vga_out(vga_out),
