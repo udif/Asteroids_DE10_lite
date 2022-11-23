@@ -130,8 +130,6 @@ wire				clk_100;
 // Screens signals
 wire	[31:0]	pxl_x;
 wire	[31:0]	pxl_y;
-wire				h_sync_wire;
-wire				v_sync_wire;
 wire	[3:0]		vga_r_wire;
 wire	[3:0]		vga_g_wire;
 wire	[3:0]		vga_b_wire;
@@ -172,8 +170,8 @@ assign ARDUINO_IO[10]	= lcd_d_c;
 assign ARDUINO_IO[11]	= lcd_rd;
 assign ARDUINO_IO[12]	= lcd_buzzer;
 assign ARDUINO_IO[13]	= lcd_status_led;
-assign VGA_HS = h_sync_wire;
-assign VGA_VS = v_sync_wire;
+assign VGA_HS = vga_out.t.hsync;
+assign VGA_VS = vga_out.t.vsync;
 assign VGA_R = vga_r_wire;
 assign VGA_G = vga_g_wire;
 assign VGA_B = vga_b_wire;
@@ -188,7 +186,7 @@ Screens_dispaly #(
 	// Extra 2 cycle latency since all Draw_Sprite() modules
 	// Use a ROM with 2 cycle latency for RGB data
 	.RGB_LAT(2)
-) Screen_control(
+) Screens_dispaly_inst (
 	.clk_25(clk_25),
 	.clk_100(clk_100),
 	.Red_level(Red_level),
@@ -197,8 +195,6 @@ Screens_dispaly #(
 	.Red(vga_r_wire),
 	.Green(vga_g_wire),
 	.Blue(vga_b_wire),
-	.h_sync(h_sync_wire),
-	.v_sync(v_sync_wire),
 	.vga_chain_start(vga_chain_start),
 	.vga_chain_end(vga_chain_end),
 	.vga_out(vga_out),
@@ -275,11 +271,12 @@ localparam ANIM_CNT_M1 = ANIM_CNT - 1;
 
 reg [$clog2(ANIM_CNT)-1:0]anim_cnt;
 reg anim_pulse;
-reg v_sync_wire_d;
+reg v_sync_d;
+wire v_sync_pulse = vga_chain_start.t.vsync && !v_sync_d;
 always @(posedge clk_25) begin
-    v_sync_wire_d <= v_sync_wire;
+    v_sync_d <= vga_chain_start.t.vsync;
     anim_pulse <= 1'b0;
-    if (v_sync_wire && !v_sync_wire_d) begin
+    if (v_sync_pulse) begin
         if(anim_cnt > 0) 
             anim_cnt <= anim_cnt - {{($bits(anim_cnt)-1){1'b0}}, 1'b1};
         else begin
@@ -439,7 +436,7 @@ generate
 			.ship_x(ship_x),
 			.ship_y(ship_y),
 			.resetN(resetN),
-			.vsync(v_sync_wire && !v_sync_wire_d),
+			.vsync(v_sync_pulse),
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
 			.anim_base(torpedo_anim_base),
@@ -583,7 +580,7 @@ reg [7:0]start_cnt;
 always @(posedge clk_25 or negedge resetN) begin
 	if (~resetN)
 		start_cnt <= '0;
-    else if (v_sync_wire && !v_sync_wire_d) begin
+    else if (v_sync_pulse) begin
         if (start_cnt != '1)
             start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
     end

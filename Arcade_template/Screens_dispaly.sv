@@ -95,4 +95,8 @@ begin
 	assign v_sync = v_dly[0];
 end
 endgenerate
+
+assign vga_out.t.hsync = h_sync;
+assign vga_out.t.vsync = v_sync;
+
 endmodule
