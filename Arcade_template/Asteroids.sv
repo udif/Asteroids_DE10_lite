@@ -489,6 +489,8 @@ wire [$clog2(MAX_NUM_LIVES+1)+LIVES_X_SPACING_LOG2-1:0]curr_life_t = ($bits(curr
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]curr_life = curr_life_t[LIVES_X_SPACING_LOG2 +: $clog2(MAX_NUM_LIVES+1)];
 wire draw_life;
 
+vga vga_chain_lives ( /* .clk(clk_25) */ ) ;
+
 Draw_Sprite #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT),
@@ -496,8 +498,8 @@ Draw_Sprite #(
 ) lives_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.vga_chain_in(vga_chain_torpedos[T_NUM]),
+	.vga_chain_out(vga_chain_lives),
 	.topLeft_x(LIVES_X_OFFSET + {curr_life, (LIVES_X_SPACING_LOG2)'(0)}),
 	.topLeft_y(2),
 	.width(10'd30),
@@ -511,12 +513,12 @@ Draw_Sprite #(
 	.sprite_rd(),
 	.sprite_addr(spaceship_lives_addr),
 	.sprite_data(spaceship_lives_data),
-	.Red_level  (RGB[RGB_LIVES][11:8]),
-	.Green_level(RGB[RGB_LIVES][7:4]),
-	.Blue_level (RGB[RGB_LIVES][3:0]),
 	.Drawing   (draw_life)
 	);
 assign draw[RGB_LIVES] = draw_life && (curr_life < lives);
+assign  RGB[RGB_LIVES][11:8] = vga_chain_lives.t.red;
+assign  RGB[RGB_LIVES][7:4]  = vga_chain_lives.t.green;
+assign  RGB[RGB_LIVES][3:0]  = vga_chain_lives.t.blue;
 
 spaceship	spaceship_lives_inst (
 	.clock(clk_25),
@@ -535,6 +537,8 @@ wire draw_gameover;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
+vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
+
 Draw_Sprite #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT),
@@ -542,8 +546,8 @@ Draw_Sprite #(
 ) gameover_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.vga_chain_in(vga_chain_lives),
+	.vga_chain_out(vga_chain_gameover),
 	.topLeft_x((WIDTH-GAMEOVER_WIDTH)/2),
 	.topLeft_y((HEIGHT-GAMEOVER_HEIGHT)/2),
 	.width(GAMEOVER_WIDTH),
@@ -558,13 +562,13 @@ Draw_Sprite #(
 	.sprite_addr(gameover_addr),
 	// convert 2 bit grey level data into 12 bit RGB
 	.sprite_data({3{gameover_data, 2'b0}}),
-	.Red_level  (RGB[RGB_GAMEOVER][11:8]),
-	.Green_level(RGB[RGB_GAMEOVER][7:4]),
-	.Blue_level (RGB[RGB_GAMEOVER][3:0]),
 	.Drawing   (draw_gameover)
 );
 
 assign draw[RGB_GAMEOVER] = draw_gameover && game_over;
+assign  RGB[RGB_GAMEOVER][11:8] = vga_chain_gameover.t.red;
+assign  RGB[RGB_GAMEOVER][7:4]  = vga_chain_gameover.t.green;
+assign  RGB[RGB_GAMEOVER][3:0]  = vga_chain_gameover.t.blue;
 
 gameover gameover_rom_inst (
 	.clock(clk_25),
@@ -599,8 +603,8 @@ Draw_Sprite #(
 ) asteroids_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.pxl_x(pxl_x),
-	.pxl_y(pxl_y),
+	.vga_chain_in(vga_chain_gameover),
+	.vga_chain_out(vga_chain_end),
 	.topLeft_x((WIDTH-ASTEROIDS_WIDTH)/2),
 	.topLeft_y((HEIGHT-ASTEROIDS_HEIGHT)/2),
 	.width(ASTEROIDS_WIDTH),
@@ -615,13 +619,13 @@ Draw_Sprite #(
 	.sprite_addr(asteroids_addr),
 	// convert 2 bit grey level data into 12 bit RGB
 	.sprite_data({asteroids_data[8:1], {4{asteroids_data[0]}}}), // RGB 4:4:1
-	.Red_level  (RGB[RGB_ASTEROIDS][11:8]),
-	.Green_level(RGB[RGB_ASTEROIDS][7:4]),
-	.Blue_level (RGB[RGB_ASTEROIDS][3:0]),
 	.Drawing   (draw_asteroids)
 );
 
 assign draw[RGB_ASTEROIDS] = draw_asteroids && (start_cnt != '1);
+assign  RGB[RGB_ASTEROIDS][11:8] = vga_chain_end.t.red;
+assign  RGB[RGB_ASTEROIDS][7:4]  = vga_chain_end.t.green;
+assign  RGB[RGB_ASTEROIDS][3:0]  = vga_chain_end.t.blue;
 
 asteroids_start asteroids_start_inst (
 	.clock(clk_25),

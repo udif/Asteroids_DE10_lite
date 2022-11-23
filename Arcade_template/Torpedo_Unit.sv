@@ -57,10 +57,6 @@ localparam X_W = $clog2(WIDTH);
 localparam Y_W = $clog2(HEIGHT);
 localparam XY_W = (X_W > Y_W) ? X_W : Y_W;
 
-logic [3:0]red;
-logic [3:0]green;
-logic [3:0]blue;
-
 reg tx, ty; // temporary overflow flags
 //reg t_fire;
 
@@ -159,8 +155,8 @@ Draw_Sprite #(
 ) draw_inst2(
     .clk(clk),
     .resetN(resetN),
-    .pxl_x(vga_chain_in.t.pxl_x),
-    .pxl_y(vga_chain_in.t.pxl_y),
+	.vga_chain_in(vga_chain_in),
+	.vga_chain_out(vga_chain_out),
     .topLeft_x(torpedo_x[($bits(torpedo_x) - 1):XY_FRACTION] - 10'd9),
     .topLeft_y(torpedo_y[($bits(torpedo_y) - 1):XY_FRACTION] - 9'd2),
     .width(10'd18),
@@ -171,18 +167,8 @@ Draw_Sprite #(
     .cos_val(t_cos_val),
     .sprite_addr(sprite_addr),
     .sprite_data(sprite_data),
-    .Red_level(red),
-    .Green_level(green),
-    .Blue_level(blue),
     .Drawing(Draw_t)
     );
-
-always_comb begin
-	vga_chain_out.t = vga_chain_in.t;
-	vga_chain_out.t.red = red;
-	vga_chain_out.t.green = green;
-	vga_chain_out.t.blue = blue;
-end
 
 torpedo	torpedo_inst (
     .clock(clk),

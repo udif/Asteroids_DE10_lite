@@ -13,9 +13,8 @@ module Draw_Sprite #(
 	
 	input clk,
 	input resetN,
-	// current pixel being calculated
-	input [$clog2(WIDTH )-1:0]pxl_x,
-	input [$clog2(HEIGHT)-1:0]pxl_y,
+    vga.in  vga_chain_in,
+    vga.out vga_chain_out,
 	// sprite top, left
 	input [$clog2(WIDTH )-1:0]topLeft_x,
 	input [$clog2(HEIGHT)-1:0]topLeft_y,
@@ -35,10 +34,6 @@ module Draw_Sprite #(
 	output sprite_rd,
 	output [$clog2(WIDTH * HEIGHT)-1:0]sprite_addr,
 	input [11:0]sprite_data,
-	// RGB output and enable
-	output reg [3:0]Red_level,
-	output reg [3:0]Green_level,
-	output reg [3:0]Blue_level,
 	output reg      Drawing
 	
 	);
@@ -49,6 +44,10 @@ localparam XY_W = (WIDTH > HEIGHT) ? X_W : Y_W;
 
 wire in_rectangle;
 
+logic [3:0]red;
+logic [3:0]green;
+logic [3:0]blue;
+
 // All calculations are done with reference to center of figure
 // width , height are divided by 2 using logical right shift by 1, as they are unsigned
 assign center_x = topLeft_x + offset_x;
@@ -56,8 +55,8 @@ assign center_y = topLeft_y + offset_y;
 
 // find offset from **rotation center** of sprite
 // by subtracting width/2 and height/2
-wire signed [XY_W:0]dx = {1'b0, pxl_x} - {1'b0, center_x};
-wire signed [XY_W:0]dy = {1'b0, pxl_y} - {1'b0, center_y};
+wire signed [XY_W:0]dx = {1'b0, vga_chain_in.t.pxl_x} - {1'b0, center_x};
+wire signed [XY_W:0]dy = {1'b0, vga_chain_in.t.pxl_y} - {1'b0, center_y};
 
 // rotated x,y offset from sprite rotation center
 wire signed [XY_W:0]dxr;
@@ -99,9 +98,9 @@ assign sprite_rd = in_rectangle;
 always @(posedge clk or negedge resetN) begin
 	if (!resetN) begin
 		Drawing <= 0;
-		Red_level <= 4'hF;
-		Green_level <= 4'hF;
-		Blue_level <= 4'hF;
+		red <= 4'hF;
+		green <= 4'hF;
+		blue <= 4'hF;
 	end
 	else begin
 		Drawing <= 0;
@@ -111,12 +110,19 @@ always @(posedge clk or negedge resetN) begin
 		if (in_rectangle_d2) begin
 			if ({sprite_r, sprite_g, sprite_b} != TRANSPARENT) begin
 				Drawing <= 1;
-				Red_level <= sprite_r;
-				Green_level <= sprite_g;
-				Blue_level <= sprite_b;
+				red <= sprite_r;
+				green <= sprite_g;
+				blue <= sprite_b;
 			end
 		end
 	end
+end
+
+always_comb begin
+	vga_chain_out.t = vga_chain_in.t;
+	vga_chain_out.t.red = red;
+	vga_chain_out.t.green = green;
+	vga_chain_out.t.blue = blue;
 end
 
 endmodule
