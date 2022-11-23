@@ -421,28 +421,31 @@ genvar t; // torpedos
 // We have multiple torpedo instances
 // fire trigger is cascaded so that the next torpedo gets a fire sequence
 // only if the previous torpedo is still flying
+vga vga_chain_torpedos[T_NUM+1] ( /* .clk(clk_25) */ ) ;
+wire [T_NUM:0]torpedos;
 generate
-	wire [T_NUM:0]torpedos;
+	assign vga_chain_torpedos[0].t = vga_chain_score.t;
 	assign torpedos[0] = A;
 	for (t = 0; t < T_NUM ; t = t + 1) begin : tor_insts
 		Torpedo_Unit torpedo_inst (
 			.clk(clk_25),
-			.pxl_x(pxl_x),
-			.pxl_y(pxl_y),
+			.resetN(resetN),
+			.vga_chain_in(vga_chain_torpedos[t]),
+			.vga_chain_out(vga_chain_torpedos[t+1]),
 			.ship_x(ship_x),
 			.ship_y(ship_y),
-			.resetN(resetN),
 			.vsync(v_sync_pulse),
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
 			.anim_base(torpedo_anim_base),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1]),
-			.Red  (RGB[RGB_TORPEDO+t][11:8]),
-			.Green(RGB[RGB_TORPEDO+t][7:4]),
-			.Blue (RGB[RGB_TORPEDO+t][3:0]),
 			.Draw(draw[RGB_TORPEDO+t])
 		);
+		//assign draw[RGB_TORPEDO+t] = ;
+		assign  RGB[RGB_TORPEDO+t][11:8] = vga_chain_torpedos[t+1].t.red;
+		assign  RGB[RGB_TORPEDO+t][7:4]  = vga_chain_torpedos[t+1].t.green;
+		assign  RGB[RGB_TORPEDO+t][3:0]  = vga_chain_torpedos[t+1].t.blue;
 	end
 endgenerate
 
