@@ -12,9 +12,6 @@ module Screens_dispaly # (
 	
 	input					clk_25,
 	input					clk_100,
-	input		[3:0]		Red_level,
-	input		[3:0]		Green_level,
-	input		[3:0]		Blue_level,
 	output				h_sync,
 	output				v_sync,
 	vga.in		vga_chain_end,   // back from all display units

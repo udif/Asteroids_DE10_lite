@@ -164,7 +164,7 @@ Draw_Sprite #(
     .cos_val(t_cos_val),
     .draw_mask(draw_mask && t_fire), // Draw only if torpedo is flying
     .sprite_addr(sprite_addr),
-    .sprite_data(sprite_data),
+    .sprite_data(sprite_data)
 );
 
 torpedo	torpedo_inst (

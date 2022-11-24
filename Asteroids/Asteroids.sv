@@ -137,9 +137,6 @@ wire				lcd_d_c;
 wire				lcd_rd;
 wire				lcd_buzzer;
 wire				lcd_status_led;
-wire	[3:0]		Red_level;
-wire	[3:0]		Green_level;
-wire	[3:0]		Blue_level;
 
 // Periphery signals
 wire	A;
@@ -186,9 +183,6 @@ Screens_dispaly #(
 ) Screens_dispaly_inst (
 	.clk_25(clk_25),
 	.clk_100(clk_100),
-	.Red_level(Red_level),
-	.Green_level(Green_level),
-	.Blue_level(Blue_level),
 	.vga_chain_start(vga_chain_start),
 	.vga_chain_end(vga_chain_end),
 	.vga_out(vga_out),
@@ -282,47 +276,15 @@ end
 
 // how many torpedos at the same time
 localparam T_NUM = 4;
-// RGB sources
-typedef enum int unsigned {
-	RGB_SCORE,
-	RGB_ASTEROIDS,
-	RGB_GAMEOVER,
-	RGB_SHIP,
-	RGB_LIVES,
-	RGB_TORPEDO,
-	RGB_STARS = RGB_TORPEDO + T_NUM // background, must be the last one!
-} RGB_SRC ;
-
-wire [RGB_STARS:0][11:0]RGB;
-wire [RGB_STARS-1:0]draw;
-
-
-// Priority mux for the RGB
-Drawing_priority #(
-	.SIZE($bits(draw))
-) drawing_mux(
-	.clk(clk_25),
-	.resetN(resetN),
-	.RGB(RGB),
-	.draw(draw),
-	.RGB_bg(RGB[RGB_STARS]),
-	.Red_level(Red_level),
-	.Green_level(Green_level),
-	.Blue_level(Blue_level)
-	);
 
 vga vga_chain_stars ( /* .clk(clk_25) */ ) ;
-
-assign RGB[RGB_STARS][11:8] = vga_chain_stars.t.red;
-assign RGB[RGB_STARS][7:4 ] = vga_chain_stars.t.green;
-assign RGB[RGB_STARS][3:0]  = vga_chain_stars.t.blue;
 
 // Starfield
 Draw_Stars Draw_Stars_inst(
 	.clk(clk_25),
 	.resetN(resetN),
 	.vga_chain_in(vga_chain_start),
-	.vga_chain_out(vga_chain_stars),
+	.vga_chain_out(vga_chain_stars)
 );
 
 wire signed [17:0]ship_sin_val;
@@ -350,13 +312,9 @@ Ship_unit #(
 	.sin_val(ship_sin_val),
 	.cos_val(ship_cos_val),
 	.draw_mask(~game_over),
-	.anim_pulse(anim_pulse),
+	.anim_pulse(anim_pulse)
 	//,.debug_out(debug_out)
 );
-assign draw[RGB_SHIP] = vga_chain_ship.t.en;
-assign RGB[RGB_SHIP][11:8] = vga_chain_ship.t.red;
-assign RGB[RGB_SHIP][7:4]  = vga_chain_ship.t.green;
-assign RGB[RGB_SHIP][3:0]  = vga_chain_ship.t.blue;
 
 //
 // Score accumulator in BCD
@@ -364,12 +322,14 @@ assign RGB[RGB_SHIP][3:0]  = vga_chain_ship.t.blue;
 localparam SCORE_DIGITS = 6;
 reg [SCORE_DIGITS-1:0][3:0]score;
 
+vga vga_chain_score ( /* .clk(clk_25) */ ) ;
+
 score_box #(
 	.DIGITS(SCORE_DIGITS)
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add((|draw[RGB_TORPEDO +: T_NUM]) & draw[RGB_SCORE]),
+	.add(any_torpedo_en[T_NUM] & vga_chain_score.t.en),
 	.sum(1), // How much to add (use BCD!)
 	.result(score)
 );
@@ -377,7 +337,6 @@ score_box #(
 //
 // Score display
 //
-vga vga_chain_score ( /* .clk(clk_25) */ ) ;
 
 Draw_Score #(
 	.DIGITS(SCORE_DIGITS)
@@ -390,11 +349,6 @@ Draw_Score #(
 	.digits(score),
 	.draw_mask(~game_over)
 );
-assign draw[RGB_SCORE] = vga_chain_score.t.en;
-assign  RGB[RGB_SCORE][11:8] = vga_chain_score.t.red;
-assign  RGB[RGB_SCORE][7:4]  = vga_chain_score.t.green;
-assign  RGB[RGB_SCORE][3:0]  = vga_chain_score.t.blue;
-
 //
 // Torpedo display
 //
@@ -413,17 +367,19 @@ always @(posedge clk_25)
 localparam ANIM_SIZE_TORPEDO=90;
 wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]torpedo_anim_base = ($bits(torpedo_anim_base))'(anim_cycle_torpedo * ANIM_SIZE_TORPEDO);
 
-// How many torpedos in flight
-genvar t; // torpedos
-
 // We have multiple torpedo instances
 // fire trigger is cascaded so that the next torpedo gets a fire sequence
 // only if the previous torpedo is still flying
-vga vga_chain_torpedos[T_NUM+1] ( /* .clk(clk_25) */ ) ;
+
 wire [T_NUM:0]torpedos;
+logic [T_NUM:0]any_torpedo_en;
+vga vga_chain_torpedos[0:T_NUM] ( /* .clk(clk_25) */ ) ;
+
+genvar t; // torpedos
 generate
-	assign vga_chain_torpedos[0].t = vga_chain_score.t;
 	assign torpedos[0] = A;
+	assign any_torpedo_en[0] = 1'b0;
+	assign vga_chain_torpedos[0].t = vga_chain_score.t;
 	for (t = 0; t < T_NUM ; t = t + 1) begin : tor_insts
 		Torpedo_Unit torpedo_inst (
 			.clk(clk_25),
@@ -440,19 +396,17 @@ generate
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1])
 		);
-		assign draw[RGB_TORPEDO+t] = vga_chain_torpedos[t+1].t.en;
-		assign  RGB[RGB_TORPEDO+t][11:8] = vga_chain_torpedos[t+1].t.red;
-		assign  RGB[RGB_TORPEDO+t][7:4]  = vga_chain_torpedos[t+1].t.green;
-		assign  RGB[RGB_TORPEDO+t][3:0]  = vga_chain_torpedos[t+1].t.blue;
+		assign any_torpedo_en[t+1] = any_torpedo_en[t] | vga_chain_torpedos[t+1].t.en;
 	end
 endgenerate
+//assign vga_chain_torpedos.t = torpedos_vga_chain[T_NUM];
 
 // How many "lives" do we have
 localparam NUM_LIVES = 3;
 localparam MAX_NUM_LIVES = 10;
 
 wire bonus = (score[1:0] == (8'b0)) && (score > 0);
-wire die = draw[RGB_SHIP] && draw[RGB_SCORE]; // for the time being
+wire die = vga_chain_ship.t.en && vga_chain_score.t.en; // for the time being
 
 // "lives" counter
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
@@ -510,12 +464,8 @@ Draw_Sprite #(
 	.draw_mask(curr_life < lives),
 	.sprite_rd(),
 	.sprite_addr(spaceship_lives_addr),
-	.sprite_data(spaceship_lives_data),
-	);
-assign draw[RGB_LIVES] = vga_chain_lives.t.en;
-assign  RGB[RGB_LIVES][11:8] = vga_chain_lives.t.red;
-assign  RGB[RGB_LIVES][7:4]  = vga_chain_lives.t.green;
-assign  RGB[RGB_LIVES][3:0]  = vga_chain_lives.t.blue;
+	.sprite_data(spaceship_lives_data)
+);
 
 spaceship	spaceship_lives_inst (
 	.clock(clk_25),
@@ -560,11 +510,6 @@ Draw_Sprite #(
 	// convert 2 bit grey level data into 12 bit RGB
 	.sprite_data({3{gameover_data, 2'b0}})
 );
-
-assign draw[RGB_GAMEOVER] = vga_chain_gameover.t.en;
-assign  RGB[RGB_GAMEOVER][11:8] = vga_chain_gameover.t.red;
-assign  RGB[RGB_GAMEOVER][7:4]  = vga_chain_gameover.t.green;
-assign  RGB[RGB_GAMEOVER][3:0]  = vga_chain_gameover.t.blue;
 
 gameover gameover_rom_inst (
 	.clock(clk_25),
@@ -617,11 +562,6 @@ Draw_Sprite #(
 	// convert 2 bit grey level data into 12 bit RGB
 	.sprite_data({asteroids_data[8:1], {4{asteroids_data[0]}}}) // RGB 4:4:1
 );
-
-assign draw[RGB_ASTEROIDS] = vga_chain_end.t.en;
-assign  RGB[RGB_ASTEROIDS][11:8] = vga_chain_end.t.red;
-assign  RGB[RGB_ASTEROIDS][7:4]  = vga_chain_end.t.green;
-assign  RGB[RGB_ASTEROIDS][3:0]  = vga_chain_end.t.blue;
 
 asteroids_start asteroids_start_inst (
 	.clock(clk_25),

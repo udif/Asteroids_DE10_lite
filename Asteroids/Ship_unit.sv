@@ -120,7 +120,7 @@ Draw_Sprite #(
 	.draw_mask(draw_mask),
 	.sprite_rd(),
 	.sprite_addr(sprite_addr),
-	.sprite_data(sprite_data),
+	.sprite_data(sprite_data)
 	);
 
 spaceship	spaceship_inst (
