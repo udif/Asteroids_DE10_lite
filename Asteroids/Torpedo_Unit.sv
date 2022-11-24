@@ -163,6 +163,7 @@ Draw_Sprite #(
     .sin_val(t_sin_val),
     .cos_val(t_cos_val),
     .draw_mask(draw_mask && t_fire), // Draw only if torpedo is flying
+	.mem_width(10'd18), // same as width in this case
     .sprite_addr(sprite_addr),
     .sprite_data(sprite_data)
 );

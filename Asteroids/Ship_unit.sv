@@ -118,6 +118,7 @@ Draw_Sprite #(
 	.sin_val(sin_val),
 	.cos_val(cos_val),
 	.draw_mask(draw_mask),
+	.mem_width(10'd30), // same as width in this case
 	.sprite_rd(),
 	.sprite_addr(sprite_addr),
 	.sprite_data(sprite_data)

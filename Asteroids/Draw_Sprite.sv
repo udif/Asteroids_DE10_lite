@@ -32,6 +32,9 @@ module Draw_Sprite #(
 	input signed [17:0]cos_val,
 	// additional mask for enabling/disabling the pixel draw
 	input draw_mask,
+	// memory line width
+	// useful for putting small sprites inside a large bitmap
+	input [$clog2(WIDTH )-1:0]mem_width,
 	// ROM interface
 	output sprite_rd,
 	output [$clog2(WIDTH * HEIGHT)-1:0]sprite_addr,
@@ -84,7 +87,7 @@ wire [3:0]sprite_r;
 wire [3:0]sprite_g;
 wire [3:0]sprite_b;
 
-assign sprite_addr = tl_dyr * width + tl_dxr;
+assign sprite_addr = tl_dyr * mem_width + tl_dxr;
 assign {sprite_r, sprite_g, sprite_b} = sprite_data;
 
 assign in_rectangle =

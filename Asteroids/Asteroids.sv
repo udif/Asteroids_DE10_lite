@@ -462,6 +462,7 @@ Draw_Sprite #(
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val(18'h1ffff), // cos(90)
 	.draw_mask(curr_life < lives),
+	.mem_width(10'd30), // same as width in this case
 	.sprite_rd(),
 	.sprite_addr(spaceship_lives_addr),
 	.sprite_data(spaceship_lives_data)
@@ -505,6 +506,7 @@ Draw_Sprite #(
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val(18'h1ffff), // cos(90)
 	.draw_mask(game_over),
+	.mem_width(GAMEOVER_WIDTH), // same as width in this case
 	.sprite_rd(),
 	.sprite_addr(gameover_addr),
 	// convert 2 bit grey level data into 12 bit RGB
@@ -557,6 +559,7 @@ Draw_Sprite #(
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val({1'b0, start_cnt, 9'h1ff}), // scaled cos(90)
 	.draw_mask(start_cnt != '1),
+	.mem_width(ASTEROIDS_WIDTH), // same as width in this case
 	.sprite_rd(),
 	.sprite_addr(asteroids_addr),
 	// convert 2 bit grey level data into 12 bit RGB
