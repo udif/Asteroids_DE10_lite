@@ -56,9 +56,9 @@ lcd_ctrl LCD_interface(
 );
 
 // screen out display picker / enable
-assign vga_out.t.red   = (vga_chain_start.t.en == 1'b1) ? Red_level : 4'b0000 ;
-assign vga_out.t.green = (vga_chain_start.t.en == 1'b1) ? Green_level : 4'b0000 ;
-assign vga_out.t.blue  = (vga_chain_start.t.en == 1'b1) ? Blue_level : 4'b0000 ;
+assign vga_out.t.red   = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.red   : 4'b0000 ;
+assign vga_out.t.green = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.green : 4'b0000 ;
+assign vga_out.t.blue  = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.blue  : 4'b0000 ;
 
 // delay h/v sync as requested
 generate
