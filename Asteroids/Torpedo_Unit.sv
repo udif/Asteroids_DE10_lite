@@ -4,13 +4,11 @@
 
 module Torpedo_Unit #(
 	parameter WIDTH = 640,
-	parameter HEIGHT = 480,
-    parameter TORPEDOS = 2
+	parameter HEIGHT = 480
 ) (
 	
 	input  clk,
 	input  resetN,
-	input  collision,
 	vga.in  vga_chain_in,
 	vga.out vga_chain_out,
 	input  [$clog2(WIDTH )-1:0]ship_x,

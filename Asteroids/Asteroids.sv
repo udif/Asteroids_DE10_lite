@@ -211,10 +211,9 @@ pll25	pll25_inst (
 
 
 //7-Seg default assign (all leds are off)
-assign HEX0 = 8'b11111111;
-assign HEX1 = 8'b11111111;
-assign HEX2 = 8'b11111111;
-assign HEX3 = 8'b11111111;
+wire [23:0]Debug_Bus;
+wire [6*8-1:0]Hex;
+assign {HEX5, HEX4, HEX3, HEX2, HEX1, HEX0} = Hex;
 
 // periphery_control module for external units: joystick, wheel and buttons (A,B, Select and Start) 
 periphery_control periphery_control_inst(
@@ -240,15 +239,15 @@ periphery_control periphery_control_inst(
 	assign LEDR[7] = Up; 		// UP
 	assign LEDR[6] = Down; 		// DOWN
 
-	seven_segment ss5(
-	.in_hex(Wheel[11:8]),
-	.out_to_ss(HEX5)
-);
-
-	seven_segment ss4(
-	.in_hex(Wheel[7:4]),
-	.out_to_ss(HEX4)
-);
+genvar gi;
+generate
+	for (gi = 0; gi < 6; gi = gi + 1) begin: ss
+		seven_segment ss_inst (
+			.in_hex(Debug_Bus[(4*gi) +: 4]),
+			.out_to_ss(Hex[(8*gi) +: 8])
+		);
+	end
+endgenerate
 
 //
 // Shared animation pulse
@@ -484,6 +483,23 @@ localparam GAMEOVER_MASK=12'h000;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
+vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
+
+Asteroid_unit #(
+	.WIDTH(WIDTH),
+	.HEIGHT(HEIGHT)
+) asteroid_unit_inst (
+	.clk(clk_25),
+	.resetN(resetN),
+	.vga_chain_in(vga_chain_lives),
+	.vga_chain_out(vga_chain_asteroid),
+	.vsync(v_sync_pulse),
+	.draw_mask(~game_over),
+    .new_asteroid(start_done & ~start_done_d),
+    .asteroid_hit(1'b0),
+	.Debug_Bus(Debug_Bus)
+);
+
 vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
 
 Draw_Sprite #(
@@ -493,7 +509,7 @@ Draw_Sprite #(
 ) gameover_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.vga_chain_in(vga_chain_lives),
+	.vga_chain_in(vga_chain_asteroid),
 	.vga_chain_out(vga_chain_gameover),
 	.topLeft_x((WIDTH-GAMEOVER_WIDTH)/2),
 	.topLeft_y((HEIGHT-GAMEOVER_HEIGHT)/2),
@@ -523,13 +539,20 @@ gameover gameover_rom_inst (
 // Opening screen
 //
 reg [7:0]start_cnt;
+reg start_done, start_done_d;
 always @(posedge clk_25 or negedge resetN) begin
-	if (~resetN)
+	if (~resetN) begin
 		start_cnt <= '0;
-    else if (v_sync_pulse) begin
-        if (start_cnt != '1)
-            start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
-    end
+		start_done <= '0;
+		start_done_d <= '0;
+	end else if (v_sync_pulse) begin
+		if (start_cnt != '1)
+			start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
+		else begin
+			start_done_d <= start_done;
+			start_done <= 1'b1;
+		end
+	end
 end
 
 localparam ASTEROIDS_WIDTH=481;
@@ -558,7 +581,7 @@ Draw_Sprite #(
 	.center_y(),
 	.sin_val(18'h0), // straight up, sin(90)
 	.cos_val({1'b0, start_cnt, 9'h1ff}), // scaled cos(90)
-	.draw_mask(start_cnt != '1),
+	.draw_mask(~start_done),
 	.mem_width(ASTEROIDS_WIDTH), // same as width in this case
 	.sprite_rd(),
 	.sprite_addr(asteroids_addr),
