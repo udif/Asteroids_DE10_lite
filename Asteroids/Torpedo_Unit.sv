@@ -17,11 +17,13 @@ module Torpedo_Unit #(
     input signed [17:0] sin_val,
     input signed [17:0] cos_val,
     input draw_mask,
+    input hit,
     input [$clog2(90*3)-1:0]anim_base,
-    input  fire,
-    output fire_out,
-    output t_dead,
-    output reg t_fire,
+    input  fire, // turpedo fire request, may come from either button, or prev torpedo
+    output fire_out, // chain to next torpedo if this one is busy
+    output t_dead, // pulse indicating torpedo is dead after it was fired
+    output reg t_fire, // torpedo is alive (fired)
+    output reg fire_deb,
     output fire_deb_out
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 	);
@@ -58,7 +60,10 @@ localparam XY_W = (X_W > Y_W) ? X_W : Y_W;
 reg tx, ty; // temporary overflow flags
 //reg t_fire;
 
-reg fire_deb, fire_deb_test; // debounce
+//reg fire_deb;
+reg fire_deb_test; // debounce
+
+// fire_deb is true if fire input is stable at 1 for 1/60sec
 always @(posedge clk) begin
     if (vsync) begin
         fire_deb <= fire_deb_test; // result of debounce
@@ -67,7 +72,6 @@ always @(posedge clk) begin
         // any cycle might reset it
         fire_deb_test <= fire_deb_test && fire;
     end
-
 end
 
 localparam XY_FRACTION = 7; // subpixel fraction bits
@@ -82,6 +86,8 @@ reg	signed [$clog2(HEIGHT)+XY_FRACTION:0]torpedo_yd; // 1 extra bit for sign
 // we do it because the torpedo is drawn pointing to the right, not upwards
 wire [$bits(t_speed)+$bits(sin_val)-2:0]torpedo_xd_t = sin_val * -t_speed;
 wire [$bits(t_speed)+$bits(cos_val)-2:0]torpedo_yd_t = cos_val * -t_speed;
+
+// The torpedo dies when it was alive but left the screen
 assign t_dead = t_fire && (tx || ty || (torpedo_x[($bits(torpedo_x) - 1):XY_FRACTION] > WIDTH) || (torpedo_y[($bits(torpedo_y) - 1):XY_FRACTION] > HEIGHT));
 
 // generate sync signal for reading sin/cos output 2 cycles later
@@ -108,7 +114,7 @@ always @(posedge clk or negedge resetN) begin
         if (t_fire && !fire_deb)
             // fire released, we are ready for next press
             t_fire_out <= 1'b1;
-        if (t_dead) begin
+        if (hit || t_dead) begin
             t_fire <= 1'b0;
             t_fire_out <= 1'b0; // torpedo dead, block next torpedos
             // truncate top bits so that torpedo_x/y falls
@@ -131,7 +137,7 @@ always @(posedge clk or negedge resetN) begin
         end
         if (fire_deb_d2 && !fire_deb_d3 && !t_fire) begin
             t_fire <= 1'b1;
-            // notice we ytake sin/cos val and phase shift 
+            // notice we take sin/cos val and phase shift 
             t_sin_val <=  cos_val;
             t_cos_val <= -sin_val;
             // save less fraction bits

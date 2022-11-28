@@ -230,14 +230,14 @@ periphery_control periphery_control_inst(
 	);
 	
 	// Leds and 7-Seg show periphery_control outputs
-	assign LEDR[0] = A; 			// A
-	assign LEDR[1] = B; 			// B
-	assign LEDR[2] = Select;	// Select
-	assign LEDR[3] = Start; 	// Start
-	assign LEDR[9] = Left; 		// Left
-	assign LEDR[8] = Right; 	// Right
-	assign LEDR[7] = Up; 		// UP
-	assign LEDR[6] = Down; 		// DOWN
+	//assign LEDR[0] = A; 			// A
+	//assign LEDR[1] = B; 			// B
+	//assign LEDR[2] = Select;	// Select
+	//assign LEDR[3] = Start; 	// Start
+	//assign LEDR[9] = Left; 		// Left
+	//assign LEDR[8] = Right; 	// Right
+	//assign LEDR[7] = Up; 		// UP
+	//assign LEDR[6] = Down; 		// DOWN
 
 genvar gi;
 generate
@@ -322,21 +322,31 @@ localparam SCORE_DIGITS = 6;
 reg [SCORE_DIGITS-1:0][3:0]score;
 
 vga vga_chain_score ( /* .clk(clk_25) */ ) ;
+vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
+
+wire asteroid_hit = any_torpedo_en[T_NUM] & vga_chain_asteroid.t.en;
+logic [T_NUM:0]asteroid_hit_mask, asteroid_hit_mask_d;
+
+always_ff @(posedge clk_25) begin
+	asteroid_hit_mask <= any_torpedo_en & {(T_NUM+1){vga_chain_asteroid.t.en}};
+	asteroid_hit_mask_d <= asteroid_hit_mask;
+end
+
+logic [6:0]ast_points;
 
 score_box #(
 	.DIGITS(SCORE_DIGITS)
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add(any_torpedo_en[T_NUM] & vga_chain_score.t.en),
-	.sum(1), // How much to add (use BCD!)
+	.add(asteroid_hit),
+	.sum(ast_points), // How much to add (use BCD!)
 	.result(score)
 );
 
 //
 // Score display
 //
-
 Draw_Score #(
 	.DIGITS(SCORE_DIGITS)
 ) score_inst(	
@@ -391,7 +401,10 @@ generate
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
 			.draw_mask(1'b1),
+			.hit(asteroid_hit_mask[t+1] & !asteroid_hit_mask_d[t+1]),
 			.anim_base(torpedo_anim_base),
+			.fire_deb(LEDR[2*t]),
+			.t_fire(LEDR[2*t+1]),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1])
 		);
@@ -404,8 +417,9 @@ endgenerate
 localparam NUM_LIVES = 3;
 localparam MAX_NUM_LIVES = 10;
 
-wire bonus = (score[1:0] == (8'b0)) && (score > 0);
-wire die = vga_chain_ship.t.en && vga_chain_score.t.en; // for the time being
+wire bonus = (score[3:0] == (8'b0)) && (score > 0);
+// start_done && v_sync_pulese is 1/60 sec after start_done
+wire die = start_done && vga_chain_ship.t.en && vga_chain_asteroid.t.en; // for the time being
 
 // "lives" counter
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
@@ -483,8 +497,6 @@ localparam GAMEOVER_MASK=12'h000;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
-vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
-
 Asteroid_unit #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT)
@@ -495,8 +507,10 @@ Asteroid_unit #(
 	.vga_chain_out(vga_chain_asteroid),
 	.vsync(v_sync_pulse),
 	.draw_mask(~game_over),
-    .new_asteroid(start_done & ~start_done_d),
-    .asteroid_hit(1'b0),
+	.start_done(start_done),
+    .new_asteroid(start_done & ~start_done_d & v_sync_pulse),
+    .asteroid_hit(asteroid_hit),
+	.ast_points(ast_points),
 	.Debug_Bus(Debug_Bus)
 );
 

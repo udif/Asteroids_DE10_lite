@@ -16,6 +16,7 @@ reg [DIGITS-1:0][3:0]score;
 wire [DIGITS-1:0][3:0]score_out;
 wire done;
 reg busy;
+logic add_d;
 
 assign result = score_out;
 
@@ -26,7 +27,7 @@ BCD_add #(
 	.digits(score),
     .sum(sum),
 	.result(score_out),
-	.start(add & (~busy | done)),
+	.start(add & ~add_d & (~busy | done)),
 	.done(done)
 );
 
@@ -35,16 +36,16 @@ BCD_add #(
 //
 
 always @(posedge clk or negedge resetN)
-    if (~resetN)
-        busy <= 1'b0;
-    else
-        busy <= add | busy & ~done;
-
-always@(posedge clk or negedge resetN) begin
-    if (~resetN)
+    if (~resetN) begin
         score <= '0;
-    else
+        busy <= 1'b0;
+    end else begin
+        busy <= add | busy & ~done;
         score <= done ? score_out : score;
+    end
+
+always @(posedge clk) begin
+    add_d <= add;
 end
 
 endmodule
