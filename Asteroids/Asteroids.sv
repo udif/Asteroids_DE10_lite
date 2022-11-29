@@ -20,6 +20,8 @@
 `define ENABLE_ARDUINO
 `define ENABLE_GPIO
 
+import asteroids::*;
+
 module Asteroids(
 
 	//////////// ADC CLOCK: 3.3-V LVTTL //////////
@@ -156,14 +158,15 @@ vga vga_chain_start();
 vga vga_chain_end();
 vga vga_out();
 
+
 // Screens Assigns
-assign ARDUINO_IO[7:0]	= lcd_db;
-assign ARDUINO_IO[8] 	= lcd_reset;
-assign ARDUINO_IO[9]		= lcd_wr;
-assign ARDUINO_IO[10]	= lcd_d_c;
-assign ARDUINO_IO[11]	= lcd_rd;
-assign ARDUINO_IO[12]	= lcd_buzzer;
-assign ARDUINO_IO[13]	= lcd_status_led;
+assign ARDUINO_IO[7:0] = lcd_db;
+assign ARDUINO_IO[8]   = lcd_reset;
+assign ARDUINO_IO[9]   = lcd_wr;
+assign ARDUINO_IO[10]  = lcd_d_c;
+assign ARDUINO_IO[11]  = lcd_rd;
+assign ARDUINO_IO[12]  = lcd_buzzer;
+assign ARDUINO_IO[13]  = lcd_status_led;
 assign VGA_HS = vga_out.t.hsync;
 assign VGA_VS = vga_out.t.vsync;
 assign VGA_R  = vga_out.t.red;
@@ -171,6 +174,19 @@ assign VGA_G  = vga_out.t.green;
 assign VGA_B  = vga_out.t.blue;
 
 wire resetN = ~Start;
+
+//
+// Asteroid code starts here
+//
+
+// free running 64-bit LFSR for random number sequence
+wire [63:0]lfsr64out;
+lfsr64 lfsr64_inst (
+    .clk(clk_25),
+    .rst(resetN),
+    .out(lfsr64out)
+);
+
 
 localparam DEBUG_SIZE=1;
 //wire [DEBUG_SIZE-1:0][63:0]debug_out;
@@ -230,14 +246,14 @@ periphery_control periphery_control_inst(
 	);
 	
 	// Leds and 7-Seg show periphery_control outputs
-	//assign LEDR[0] = A; 			// A
-	//assign LEDR[1] = B; 			// B
-	//assign LEDR[2] = Select;	// Select
-	//assign LEDR[3] = Start; 	// Start
-	//assign LEDR[9] = Left; 		// Left
-	//assign LEDR[8] = Right; 	// Right
-	//assign LEDR[7] = Up; 		// UP
-	//assign LEDR[6] = Down; 		// DOWN
+	assign LEDR[0] = A; 			// A
+	assign LEDR[1] = B; 			// B
+	assign LEDR[2] = Select;	// Select
+	assign LEDR[3] = Start; 	// Start
+	assign LEDR[9] = Left; 		// Left
+	assign LEDR[8] = Right; 	// Right
+	assign LEDR[7] = Up; 		// UP
+	assign LEDR[6] = Down; 		// DOWN
 
 genvar gi;
 generate
@@ -260,7 +276,7 @@ reg [$clog2(ANIM_CNT)-1:0]anim_cnt;
 reg anim_pulse;
 reg v_sync_d;
 wire v_sync_pulse = vga_chain_start.t.vsync && !v_sync_d;
-always @(posedge clk_25) begin
+always_ff @(posedge clk_25) begin
     v_sync_d <= vga_chain_start.t.vsync;
     anim_pulse <= 1'b0;
     if (v_sync_pulse) begin
@@ -272,9 +288,6 @@ always @(posedge clk_25) begin
         end
     end
 end
-
-// how many torpedos at the same time
-localparam T_NUM = 4;
 
 vga vga_chain_stars ( /* .clk(clk_25) */ ) ;
 
@@ -324,14 +337,6 @@ reg [SCORE_DIGITS-1:0][3:0]score;
 vga vga_chain_score ( /* .clk(clk_25) */ ) ;
 vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
 
-wire asteroid_hit = any_torpedo_en[T_NUM] & vga_chain_asteroid.t.en;
-logic [T_NUM:0]asteroid_hit_mask, asteroid_hit_mask_d;
-
-always_ff @(posedge clk_25) begin
-	asteroid_hit_mask <= any_torpedo_en & {(T_NUM+1){vga_chain_asteroid.t.en}};
-	asteroid_hit_mask_d <= asteroid_hit_mask;
-end
-
 logic [6:0]ast_points;
 
 score_box #(
@@ -339,7 +344,7 @@ score_box #(
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add(asteroid_hit),
+	.add(start_done & ~game_over), // always add during game, we make sure it is 0 when nothing hits
 	.sum(ast_points), // How much to add (use BCD!)
 	.result(score)
 );
@@ -366,7 +371,7 @@ Draw_Score #(
 localparam ANIM_CYCLE_TORPEDO = 3;
 localparam ANIM_CYCLE_TORPEDO_M1 = ANIM_CYCLE_TORPEDO - 1;
 reg [$clog2(ANIM_CYCLE_TORPEDO)-1:0]anim_cycle_torpedo;
-always @(posedge clk_25)
+always_ff @(posedge clk_25)
     if (anim_pulse)
         if (anim_cycle_torpedo)
             anim_cycle_torpedo <= anim_cycle_torpedo - {{($bits(anim_cycle_torpedo)-1){1'b0}}, 1'b1};
@@ -381,13 +386,12 @@ wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]torpedo_anim_base
 // only if the previous torpedo is still flying
 
 wire [T_NUM:0]torpedos;
-logic [T_NUM:0]any_torpedo_en;
+logic [T_NUM-1:0]torpedo_en, torpedo_hit;
 vga vga_chain_torpedos[0:T_NUM] ( /* .clk(clk_25) */ ) ;
 
 genvar t; // torpedos
 generate
 	assign torpedos[0] = A;
-	assign any_torpedo_en[0] = 1'b0;
 	assign vga_chain_torpedos[0].t = vga_chain_score.t;
 	for (t = 0; t < T_NUM ; t = t + 1) begin : tor_insts
 		Torpedo_Unit torpedo_inst (
@@ -401,14 +405,14 @@ generate
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
 			.draw_mask(1'b1),
-			.hit(asteroid_hit_mask[t+1] & !asteroid_hit_mask_d[t+1]),
+			.hit(torpedo_hit[t]),
 			.anim_base(torpedo_anim_base),
-			.fire_deb(LEDR[2*t]),
-			.t_fire(LEDR[2*t+1]),
+			.fire_deb(/*(LEDR[2*t]*/),
+			.t_fire(/*LEDR[2*t+1]*/),
 			.fire(torpedos[t]),
 			.fire_out(torpedos[t+1])
 		);
-		assign any_torpedo_en[t+1] = any_torpedo_en[t] | vga_chain_torpedos[t+1].t.en;
+		assign torpedo_en[t] = vga_chain_torpedos[t+1].t.en;
 	end
 endgenerate
 //assign vga_chain_torpedos.t = torpedos_vga_chain[T_NUM];
@@ -419,7 +423,8 @@ localparam MAX_NUM_LIVES = 10;
 
 wire bonus = (score[3:0] == (8'b0)) && (score > 0);
 // start_done && v_sync_pulese is 1/60 sec after start_done
-wire die = start_done && vga_chain_ship.t.en && vga_chain_asteroid.t.en; // for the time being
+logic [3:0]asteroid_en;
+wire die = start_done && vga_chain_ship.t.en && |asteroid_en; // for the time being
 
 // "lives" counter
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
@@ -497,21 +502,26 @@ localparam GAMEOVER_MASK=12'h000;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
-Asteroid_unit #(
+Asteroid_quad #(
+	.XLARGE(1), // single instance so we must have one
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT)
-) asteroid_unit_inst (
+) asteroid_quad_inst (
 	.clk(clk_25),
 	.resetN(resetN),
+	.lfsr64out(lfsr64out),
 	.vga_chain_in(vga_chain_lives),
 	.vga_chain_out(vga_chain_asteroid),
 	.vsync(v_sync_pulse),
 	.draw_mask(~game_over),
 	.start_done(start_done),
-    .new_asteroid(start_done & ~start_done_d & v_sync_pulse),
-    .asteroid_hit(asteroid_hit),
-	.ast_points(ast_points),
-	.Debug_Bus(Debug_Bus)
+	.game_over(game_over),
+    .new_level(start_done & ~start_done_d & v_sync_pulse),
+	.torpedo_en(torpedo_en),
+	.torpedo_hit(torpedo_hit),
+	.asteroid_en(asteroid_en),
+	.ast_points(ast_points)
+	//.Debug_Bus(Debug_Bus)
 );
 
 vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
@@ -554,7 +564,7 @@ gameover gameover_rom_inst (
 //
 reg [7:0]start_cnt;
 reg start_done, start_done_d;
-always @(posedge clk_25 or negedge resetN) begin
+always_ff @(posedge clk_25 or negedge resetN) begin
 	if (~resetN) begin
 		start_cnt <= '0;
 		start_done <= '0;
