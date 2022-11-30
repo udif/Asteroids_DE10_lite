@@ -375,7 +375,8 @@ Draw_Score #(
 	.offsetX(10'd0),
 	.offsetY(9'd0),
 	.digits(score),
-	.draw_mask(~game_over)
+	// draw even in game over mode. we want to see the final score!
+	.draw_mask(1'b1)
 );
 //
 // Torpedo display
@@ -556,6 +557,9 @@ generate
 endgenerate
 vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
 
+//
+// gameover banner
+//
 Draw_Sprite #(
 	.WIDTH(WIDTH),
 	.HEIGHT(HEIGHT),
@@ -590,10 +594,11 @@ gameover gameover_rom_inst (
 );
 
 //
-// Opening screen
+// Game timing control
+//
 // count twice, once for opening screen
-// the other is for new asteroid wave delay
-// this should happen each time we spawn new large asteroids
+// the other is when you die
+// we give you a few seconds to move around so you don't lose all your lives at once
 //
 reg [8:0]start_cnt;
 reg start_done;
@@ -621,6 +626,9 @@ always_ff @(posedge clk_25 or negedge resetN) begin
 	end
 end
 
+//
+// Draw game starting banner ...
+//
 localparam ASTEROIDS_WIDTH=481;
 localparam ASTEROIDS_HEIGHT=80;
 localparam ASTEROIDS_MASK=12'h000;

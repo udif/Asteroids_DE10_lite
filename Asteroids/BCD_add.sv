@@ -1,3 +1,9 @@
+//
+// Sum two number with "DIGIS" digits. Final carry is ignored and assumed to never happen.
+// Everything is BCD encoded, 4 bits/digit
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 module BCD_add #(
     parameter DIGITS=4 // How many digits
 ) (

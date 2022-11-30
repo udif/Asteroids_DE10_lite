@@ -32,7 +32,7 @@ module Asteroid_quad #(
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 );
 
-logic [3:0][$bits(150*221)-1:0]sprite_addr;
+logic [3:0][$bits(150*212)-1:0]sprite_addr;
 logic [3:0][4:0]sprite_data;
 // asteroids state:
 // 2:0 are 1st asteroid, one-hot:
@@ -186,8 +186,9 @@ generate
     end else begin
         asteroid_l_m_s_2p asteroid_inst_23 (
             .clock(clk),
-            .address_a(sprite_addr[0]),
-            .address_b(sprite_addr[1]),
+            // reduce address width to remove synthesis warnings
+            .address_a(sprite_addr[0][$bits(131*71)-1:0]),
+            .address_b(sprite_addr[1][$bits(131*71)-1:0]),
             .q_a(sprite_data[0]),
             .q_b(sprite_data[1])
         );
@@ -196,8 +197,9 @@ endgenerate
 // asteroids 2,3 can always use the small memory
 asteroid_l_m_s_2p asteroid_inst_23 (
     .clock(clk),
-    .address_a(sprite_addr[2]),
-    .address_b(sprite_addr[3]),
+    // reduce address width to remove synthesis warnings
+    .address_a(sprite_addr[2][$bits(131*71)-1:0]),
+    .address_b(sprite_addr[3][$bits(131*71)-1:0]),
     .q_a(sprite_data[2]),
     .q_b(sprite_data[3])
 );
