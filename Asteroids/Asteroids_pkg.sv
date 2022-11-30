@@ -4,7 +4,7 @@ package asteroids;
 localparam T_NUM = 4;
 
 // How many initial asteroids
-localparam A_NUM = 1;
+localparam A_NUM = 2;
 
 localparam XY_FRACTION = 7; // subpixel fraction bits
 

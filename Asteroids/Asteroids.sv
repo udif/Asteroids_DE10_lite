@@ -400,10 +400,14 @@ wire [$clog2(ANIM_SIZE_TORPEDO * (ANIM_CYCLE_TORPEDO - 1))-1:0]torpedo_anim_base
 // only if the previous torpedo is still flying
 
 wire [T_NUM:0]torpedos;
-logic [T_NUM-1:0]torpedo_en, torpedo_hit;
+logic [T_NUM-1:0]torpedo_en;
+logic [A_NUM-1:0][T_NUM-1:0] ast_torpedo_hit;
+logic [T_NUM-1:0][A_NUM-1:0] tor_torpedo_hit;
+logic [T_NUM-1:0] torpedo_hit;
+
 vga vga_chain_torpedos[0:T_NUM] ( /* .clk(clk_25) */ ) ;
 
-genvar t; // torpedos
+genvar th, t; // torpedos
 generate
 	assign torpedos[0] = A;
 	assign vga_chain_torpedos[0].t = vga_chain_score.t;
@@ -419,7 +423,7 @@ generate
 			.sin_val(ship_sin_val),
 			.cos_val(ship_cos_val),
 			.draw_mask(1'b1),
-			.hit(torpedo_hit[t]),
+			.hit(|(tor_torpedo_hit[t])), // did we hit ANY asteroid?
 			.anim_base(torpedo_anim_base),
 			.fire_deb(/*(LEDR[2*t]*/),
 			.t_fire(/*LEDR[2*t+1]*/),
@@ -427,6 +431,11 @@ generate
 			.fire_out(torpedos[t+1])
 		);
 		assign torpedo_en[t] = vga_chain_torpedos[t+1].t.en;
+		// transpose torpedo<>asteroid hit array so we can do
+		// reduction operators on the asteroid dimension
+		for (th = 0; th < A_NUM ; th = th + 1) begin : tor_hits
+			assign tor_torpedo_hit[t][th] = ast_torpedo_hit[th][t];
+		end
 	end
 endgenerate
 //assign vga_chain_torpedos.t = torpedos_vga_chain[T_NUM];
@@ -538,7 +547,7 @@ generate
 			.game_over(game_over),
 			.new_level(game_begin & ~game_begin_d & v_sync_pulse),
 			.torpedo_en(torpedo_en),
-			.torpedo_hit(torpedo_hit),
+			.torpedo_hit(ast_torpedo_hit[ga]),
 			.asteroid_en(asteroid_en[ga]),
 			//.Debug_Bus(Debug_Bus),
 			.ast_points(ast_points[ga])
