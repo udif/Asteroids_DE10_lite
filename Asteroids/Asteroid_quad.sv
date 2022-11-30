@@ -110,12 +110,13 @@ always_ff @(posedge clk or negedge resetN) begin
         asteroids_state[6:0]   <= 7'b0_0_00_001;
         asteroids_state_n[6:0] <= 7'b0_0_00_001;
     end else begin
-        if (new_level_int) begin
-            asteroids_state[6:0]   <= 7'b0_0_00_001;
-            asteroids_state_n[6:0] <= 7'b0_0_00_001;
+        if (vsync) begin
+            if (new_level_int) begin
+                asteroids_state[6:0]   <= 7'b0_0_00_001;
+                asteroids_state_n[6:0] <= 7'b0_0_00_001;
+            end else
+                asteroids_state <= asteroids_state_n;
         end
-        if (vsync)
-            asteroids_state <= asteroids_state_n;
         if (asteroid_hit[0]) begin
             if (asteroids_state[0]) begin
                 asteroids_state_n[1:0] <= 2'b10; // turn off large 1st asteroid, turn on medium
@@ -141,13 +142,39 @@ always_ff @(posedge clk or negedge resetN) begin
             asteroids_state_n[6] <= 1'b0; // turn off small 4th asteroid
     end
 end
+//
+// New asteroid init
+// For the 1st asteroid (large), we want initial (x,y) to be on the edges,
+// and we want it to be moving inwards
+// For medium and small asteroids that break off a larger one,
+// we want the initial location to be the same, and the direction to be random,
+// up to +/-45 degrees off the original one
+//
+wire      x_y_init = lfsr64out[50]; // 1 if stuck to x asis, 0 if stuck to y
+wire      l_h_init = lfsr64out[51]; // 1 if stuck on low side (0 coord)
+wire [8:0]low_bits_init   = lfsr64out[52 +: $bits(low_bits_init)];
 
-// one bit less, to make sure we are never outside the screen , without bothering with modulu
-wire [$clog2(WIDTH )-1:0]asteroid_x_init = {1'b0, lfsr64out[50 +: ($clog2(WIDTH ) - 1)]};
-wire [$clog2(HEIGHT)-1:0]asteroid_y_init = {1'b0, lfsr64out[40 +: ($clog2(HEIGHT) - 1)]}; // reuse bits, but not in same position
+// Asteroids always comes from the edge
+wire [$clog2(WIDTH )-1:0]asteroid_x_init = x_y_init  ? (l_h_init ? '0 : ($clog2(WIDTH ))'(WIDTH-1))  : ($clog2(WIDTH ))'(low_bits_init);
+wire [$clog2(HEIGHT)-1:0]asteroid_y_init = !x_y_init ? (l_h_init ? '0 : ($clog2(HEIGHT))'(HEIGHT-1)) : ($clog2(HEIGHT))'(low_bits_init);
+wire [9:0]phase_n_init;
+//  initialize phase regions
+// 2'b00 is top right
+// 2'b01 is top left
+// 2'b10 is bottom left
+// 2'b11 is bottom right
+assign phase_n_init[9:8] =
+    // bottom side, must be going up
+    ({x_y_init, l_h_init} == 2'd0) ? ({1'b0, lfsr64out[40]}) : // 00 or 01
+    // top side, must be going down
+    ({x_y_init, l_h_init} == 2'd1) ? ({1'b1, lfsr64out[40]}) : // 10 or 11
+    // right side, must be going left
+    ({x_y_init, l_h_init} == 2'd2) ? ({lfsr64out[40], ~lfsr64out[40]}) : // 01 or 10
+    // left side, must be going right
+                                     ({2{lfsr64out[40]}}); // 00 or 11
 logic [3:0][$clog2(WIDTH )-1:0]asteroid_x_out;
 logic [3:0][$clog2(HEIGHT)-1:0]asteroid_y_out;
-
+assign phase_n_init[7:0] = lfsr64out[41 +: 8];
 // initial asteroid position
 // we randomize it, unless it is an asteroid that broke off an existing one.
 
@@ -196,11 +223,14 @@ generate
             .clk(clk),
             .resetN(resetN),
             // the only random asteroid is the 1st one
-            .asteroid_x_init(((gi == 0) && new_level_int) ? asteroid_x_init : asteroid_x_out[gi]),
-            .asteroid_y_init(((gi == 0) && new_level_int) ? asteroid_y_init : asteroid_y_out[gi]),
+            // large  0 is split to 0,1, so medium 0 and medium 1 takes location and approximage phase from 0
+            // medium 0 is split to 0,2, so 2 (small implied) and small 0 takes location and approximage phase from 0
+            // medium 1 is split to 1,3, so 3 (small implied) and small 1 takes location and approximage phase from 1
+            .asteroid_x_init(((gi == 0) && new_level_int) ? asteroid_x_init : asteroid_x_out[((gi == 1) && asteroids_state[4] || (gi == 3)) ? 1 : 0]),
+            .asteroid_y_init(((gi == 0) && new_level_int) ? asteroid_y_init : asteroid_y_out[((gi == 1) && asteroids_state[4] || (gi == 3)) ? 1 : 0]),
             .asteroid_x_out(asteroid_x_out[gi]),
             .asteroid_y_out(asteroid_y_out[gi]),
-            .phase_n(lfsr64out[16+gi*10 +: 10]),
+            .phase_n(((gi == 0) && new_level_int) ? phase_n_init : (asteroid_phase_out + {{2{phase_n_init[7]}}, phase_n_init[7:0]})),
             .phase_inc_n(lfsr64out[gi*4 +: 4]),
             .vga_chain_in(vga_chain_asteroid[gi]),
             .vga_chain_out(vga_chain_asteroid[gi+1]),

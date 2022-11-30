@@ -19,7 +19,7 @@ BCD_add #(
 	.clk(clk),
 	.digits(score),
     .sum(sum),
-	.result(score_n),
+	.result(score_n)
 );
 
 //

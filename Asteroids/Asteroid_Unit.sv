@@ -15,10 +15,11 @@ module Asteroid_unit #(
 	input  resetN,
     input [$clog2(WIDTH )-1:0]asteroid_x_init,
     input [$clog2(HEIGHT)-1:0]asteroid_y_init,
-    output [$clog2(WIDTH )-1:0]asteroid_x_out,
-    output [$clog2(HEIGHT)-1:0]asteroid_y_out,
     input [9:0]phase_n,
     input [3:0]phase_inc_n,
+    output [$clog2(WIDTH )-1:0]asteroid_x_out,
+    output [$clog2(HEIGHT)-1:0]asteroid_y_out,
+    output [9:0]asteroid_phase_out,
 	vga.in  vga_chain_in,
 	vga.out vga_chain_out,
     input  vsync, // already in 1-cycle pulse form
@@ -77,8 +78,10 @@ logic [$clog2(HEIGHT)+XY_FRACTION-1:0]asteroid_y_mod;
 logic signed [$clog2(WIDTH )+XY_FRACTION:0]asteroid_xd; // 1 extra bit for sign
 logic signed [$clog2(HEIGHT)+XY_FRACTION:0]asteroid_yd; // 1 extra bit for sign
 
+// we use this as starting point for new asteroids that are split
 assign asteroid_x_out = asteroid_x[XY_FRACTION +: $clog2(WIDTH )];
 assign asteroid_y_out = asteroid_y[XY_FRACTION +: $clog2(HEIGHT)];
+assign asteroid_phase_out = phase;
 
 logic [9:0]phase;
 logic [3:0]phase_inc;

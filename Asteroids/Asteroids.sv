@@ -6,12 +6,12 @@
 `define ENABLE_CLOCK1
 `define ENABLE_CLOCK2
 `define ENABLE_SDRAM
-//`define ENABLE_HEX0
-//`define ENABLE_HEX1
-//`define ENABLE_HEX2
-//`define ENABLE_HEX3
-//`define ENABLE_HEX4
-//`define ENABLE_HEX5
+`define ENABLE_HEX0
+`define ENABLE_HEX1
+`define ENABLE_HEX2
+`define ENABLE_HEX3
+`define ENABLE_HEX4
+`define ENABLE_HEX5
 `define ENABLE_KEY
 `define ENABLE_LED
 `define ENABLE_SW
@@ -130,8 +130,6 @@ wire clk_50;
 wire clk_100;
 
 // Screens signals
-wire [31:0]pxl_x;
-wire [31:0]pxl_y;
 wire  [7:0]lcd_db;
 wire       lcd_reset;
 wire       lcd_wr;
@@ -210,10 +208,6 @@ Screens_dispaly #(
 	.lcd_d_c(lcd_d_c),
 	.lcd_rd(lcd_rd)
 );
-
-assign pxl_x = vga_chain_start.t.pxl_x;
-assign pxl_y = vga_chain_start.t.pxl_y;
-
 
 // Utilities
 
@@ -456,7 +450,7 @@ localparam LIVES_X_OFFSET = 18*SCORE_DIGITS+10;
 localparam LIVES_X_SPACING_LOG2 = 5;
 // This only works because the ship sprites are spaced 32 pixels apart (1<<5)
 // we deduce which "live" we plan to display by looking at the X position of the scan
-wire [$clog2(MAX_NUM_LIVES+1)+LIVES_X_SPACING_LOG2-1:0]curr_life_t = ($bits(curr_life_t))'(pxl_x - LIVES_X_OFFSET);
+wire [$clog2(MAX_NUM_LIVES+1)+LIVES_X_SPACING_LOG2-1:0]curr_life_t = ($bits(curr_life_t))'(vga_chain_torpedos[T_NUM].t.pxl_x - LIVES_X_OFFSET);
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]curr_life = curr_life_t[LIVES_X_SPACING_LOG2 +: $clog2(MAX_NUM_LIVES+1)];
 
 vga vga_chain_lives ( /* .clk(clk_25) */ ) ;
@@ -572,6 +566,11 @@ always_ff @(posedge clk_25 or negedge resetN) begin
 		start_done <= '0;
 		game_begin_d <= '0;
 		game_begin <= '0;
+	end else if (die) begin
+		start_cnt <= '1;
+		start_done <= 1'b1;
+		game_begin_d <= '0;
+		game_begin <= 1'b0;
 	end else if (v_sync_pulse) begin
 		if (start_cnt != '1)
 			start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
