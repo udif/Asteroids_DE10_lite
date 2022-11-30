@@ -30,8 +30,11 @@ module Screens_dispaly # (
 );
 
 vga vga_buf();
-always_ff @(posedge clk_25)
+always_ff @(posedge clk_25) begin
 	vga_buf.t <= vga_chain_end.t;
+	vga_buf.t.pxl_x <= vga_chain_start.t.pxl_x;
+	vga_buf.t.pxl_y <= vga_chain_start.t.pxl_y;
+end
 
 // LCD controller
 lcd_ctrl LCD_interface(
@@ -55,23 +58,23 @@ lcd_ctrl LCD_interface(
 );
 
 // screen out display picker / enable
-assign vga_out.t.red   = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.red   : 4'b0000 ;
-assign vga_out.t.green = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.green : 4'b0000 ;
-assign vga_out.t.blue  = (vga_chain_start.t.en == 1'b1) ? vga_chain_end.t.blue  : 4'b0000 ;
+assign vga_out.t.red   = (vga_chain_start.t.en == 1'b1) ? vga_buf.t.red   : 4'b0000 ;
+assign vga_out.t.green = (vga_chain_start.t.en == 1'b1) ? vga_buf.t.green : 4'b0000 ;
+assign vga_out.t.blue  = (vga_chain_start.t.en == 1'b1) ? vga_buf.t.blue  : 4'b0000 ;
 
 // delay h/v sync as requested
 generate
 if (RGB_LAT == 0)
 begin
-	assign vga_out.t.hsync = vga_chain_start.t.hsync;
-	assign vga_out.t.vsync = vga_chain_start.t.vsync;
+	assign vga_out.t.hsync = vga_chain_end.t.hsync;
+	assign vga_out.t.vsync = vga_chain_end.t.vsync;
 end
 else
 begin
 	reg [RGB_LAT-1:0]h_dly;
 	reg [RGB_LAT-1:0]v_dly;
-	wire [RGB_LAT:0]tmp_h = {vga_chain_start.t.hsync, h_dly};
-	wire [RGB_LAT:0]tmp_v = {vga_chain_start.t.vsync, v_dly};
+	wire [RGB_LAT:0]tmp_h = {vga_chain_end.t.hsync, h_dly};
+	wire [RGB_LAT:0]tmp_v = {vga_chain_end.t.vsync, v_dly};
 	always @(posedge clk_25)
 	begin
 		h_dly <= tmp_h[RGB_LAT:1];
