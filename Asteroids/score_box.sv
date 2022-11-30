@@ -3,22 +3,15 @@ module score_box #(
 ) (
     input  clk,
     input  resetN,
-    input  add,
     input  [DIGITS-1:0][3:0]sum, // digit to display
-    output [DIGITS-1:0][3:0]result
+    output reg [DIGITS-1:0][3:0]score
 );
 
 
 
 reg [DIGITS:0]carry;
 reg [DIGITS-1:0]chain;
-reg [DIGITS-1:0][3:0]score;
-wire [DIGITS-1:0][3:0]score_out;
-wire done;
-reg busy;
-logic add_d;
-
-assign result = score_out;
+wire [DIGITS-1:0][3:0]score_n;
 
 BCD_add #(
 	.DIGITS(DIGITS)
@@ -26,26 +19,18 @@ BCD_add #(
 	.clk(clk),
 	.digits(score),
     .sum(sum),
-	.result(score_out),
-	.start(add & ~add_d & (~busy | done)),
-	.done(done)
+	.result(score_n),
 );
 
 //
 // Do not start a new sum while the previous one is still running
 //
 
-always @(posedge clk or negedge resetN)
+always_ff @(posedge clk or negedge resetN)
     if (~resetN) begin
         score <= '0;
-        busy <= 1'b0;
     end else begin
-        busy <= add | busy & ~done;
-        score <= done ? score_out : score;
+        score <= score_n;
     end
-
-always @(posedge clk) begin
-    add_d <= add;
-end
 
 endmodule

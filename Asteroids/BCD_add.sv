@@ -2,17 +2,15 @@ module BCD_add #(
     parameter DIGITS=4 // How many digits
 ) (
     input clk,
-    input  start,
     input  [DIGITS-1:0][3:0]digits, // digit to display
     input  [DIGITS-1:0][3:0]sum, // digit to display
-    output [DIGITS-1:0][3:0]result,
-    output done
+    output reg [DIGITS-1:0][3:0]result
 );
 
 
 wire [DIGITS:0]carry;
 assign carry[0] = 1'b0;
-reg [DIGITS-1:0]chain;
+logic [DIGITS-1:0][3:0]result_n;
 
 genvar i;
 generate
@@ -28,10 +26,6 @@ generate
     end
 endgenerate
 
-always @(posedge clk)
-    chain <= {chain[DIGITS-2:0], start};
-assign done = chain[DIGITS-1];
-
 endmodule
 
 module bcd_digit (
@@ -46,7 +40,7 @@ module bcd_digit (
 wire [4:0]t = {1'b0, a} + {1'b0, b} + {4'b0, cin};
 wire t_cout = (t >= 5'd10);
 
-always @(posedge clk) begin
+always_comb begin
     c <= t_cout ? (t[3:0] - 4'd10) : t[3:0];
     cout <= t_cout;
 end

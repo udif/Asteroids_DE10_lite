@@ -20,12 +20,13 @@ module Asteroid_quad #(
     input  vsync, // already in 1-cycle pulse form
     input draw_mask,
     input start_done,
+    input game_begin,
     input game_over,
     input  new_level,
     input  [T_NUM-1:0]torpedo_en,
     output [T_NUM-1:0]torpedo_hit,
     output [3:0]asteroid_en,
-    output [8:0]ast_points,
+    output [10:0]ast_points,
     output [23:0]Debug_Bus
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 );
@@ -63,20 +64,33 @@ always_ff @(posedge clk) begin
         asteroid_hit <= asteroid_hit | asteroid_hit_n;
 end
 
+logic [3:0][4:0]points; // for 4 asteroids, 6'h2, 5'h5 or 5'h10 (20,50,100 points respectively)
+logic [6:0]ast_points_hex;
 // update points
-// we take advantage of the raster scan. only 1 asteroid can be hit on each cycle
+// This happens once every vsync
 always_ff @(posedge clk) begin
     // only 1st asteroid can be large
-    if (asteroids_state[0] & ~asteroids_state_n[0])
-        ast_points <= ($bits(ast_points))'(9'h20); // 20 points coded in BCD is 20'h20
-    // only 1st and 2nd asteroids can be medium
-    else if (asteroids_state[1] & ~asteroids_state_n[1] | asteroids_state[3] & ~asteroids_state_n[3])
-        ast_points <= ($bits(ast_points))'(9'h50); // 50 points coded in BCD is 20'h50
-    else if (asteroids_state[2] & ~asteroids_state_n[2] | |(asteroids_state[6:4] & ~asteroids_state_n[6:4]))
-        ast_points <= ($bits(ast_points))'(9'h100); // 50 points coded in BCD is 20'h50
-    else
-        ast_points <= ($bits(ast_points))'(9'h000); // no hits
+    points <= '0;
+    if (game_begin && vsync) begin
+        if (asteroids_state[0] & ~asteroids_state_n[0])
+            points[0] <= ($bits(points[0]))'(5'h2);
+        else if (asteroids_state[1] & ~asteroids_state_n[1])
+            points[0] <= ($bits(points[0]))'(5'h5);
+        else if (asteroids_state[2] & ~asteroids_state_n[2])
+            points[0] <= ($bits(points[0]))'(5'h10);
+        if (asteroids_state[3] & ~asteroids_state_n[3])
+            points[1] <= ($bits(points[1]))'(5'h5);
+        else if (asteroids_state[4] & ~asteroids_state_n[4])
+            points[1] <= ($bits(points[1]))'(5'h10);
+        if (asteroids_state[5] & ~asteroids_state_n[5])
+            points[2] <= ($bits(points[2]))'(5'h10);
+        if (asteroids_state[6] & ~asteroids_state_n[6])
+            points[3] <= ($bits(points[3]))'(5'h10);
+    end
 end
+assign ast_points_hex = {1'b0, {1'b0, points[0]} + {1'b0, points[1]}} + {1'b0, {1'b0, points[2]} + {1'b0, points[3]}};
+// BCD adjust
+assign ast_points = {({ast_points_hex[3:0] >= 4'd10} ? 7'h06 : 7'h0) + ast_points_hex, 4'b0};
 
 // intenal new level also occures when all asteroids have been blown up
 wire new_level_int = new_level | ~|asteroids_state;
@@ -87,40 +101,50 @@ wire new_level_int = new_level | ~|asteroids_state;
 // and each of them split into 2 small asteroids when they are hit
 // we use dual states to do all updates only at the end of the frame
 //
-always_ff @(posedge clk) begin
-    if (new_level_int) begin
+assign Debug_Bus[6:0] = ast_points[10:4];
+assign Debug_Bus[15:9] = asteroids_state;
+assign Debug_Bus[16] = game_begin & ~game_over;
+assign Debug_Bus[23:17] = asteroids_state_n;
+always_ff @(posedge clk or negedge resetN) begin
+    if (~resetN) begin
         asteroids_state[6:0]   <= 7'b0_0_00_001;
         asteroids_state_n[6:0] <= 7'b0_0_00_001;
-    end
-    if (vsync)
-        asteroids_state <= asteroids_state_n;
-    if (asteroid_hit[0]) begin
-        if (asteroids_state[0]) begin
-            asteroids_state_n[1:0] <= 2'b10; // turn off large 1st asteroid, turn on medium
-            asteroids_state_n[3] <= 1'b1; // turn on medium 2nd asteroid
-        end else if (asteroids_state[1]) begin
-            asteroids_state_n[2:1] <= 2'b10; // turn off medium 1st asteroid, turn on small
-            asteroids_state_n[5] <= 1'b1; // turn on small 3rd asteroid
-        end else if (asteroids_state[2]) begin
-            asteroids_state_n[2] <= 1'b0; // turn off small 1st asteroid
+    end else begin
+        if (new_level_int) begin
+            asteroids_state[6:0]   <= 7'b0_0_00_001;
+            asteroids_state_n[6:0] <= 7'b0_0_00_001;
         end
-    end
-    if (asteroid_hit[1]) begin
-        if (asteroids_state[3]) begin
-            asteroids_state_n[4:3] <= 2'b10; // turn off medium 2nd asteroid, turn on small
-            asteroids_state_n[6] <= 1'b1; // turn on small 4th asteroid
-        end else if (asteroids_state[4]) begin
-            asteroids_state_n[4] <= 1'b0; // turn off small 2nd asteroid
+        if (vsync)
+            asteroids_state <= asteroids_state_n;
+        if (asteroid_hit[0]) begin
+            if (asteroids_state[0]) begin
+                asteroids_state_n[1:0] <= 2'b10; // turn off large 1st asteroid, turn on medium
+                asteroids_state_n[3] <= 1'b1; // turn on medium 2nd asteroid
+            end else if (asteroids_state[1]) begin
+                asteroids_state_n[2:1] <= 2'b10; // turn off medium 1st asteroid, turn on small
+                asteroids_state_n[5] <= 1'b1; // turn on small 3rd asteroid
+            end else if (asteroids_state[2]) begin
+                asteroids_state_n[2] <= 1'b0; // turn off small 1st asteroid
+            end
         end
+        if (asteroid_hit[1]) begin
+            if (asteroids_state[3]) begin
+                asteroids_state_n[4:3] <= 2'b10; // turn off medium 2nd asteroid, turn on small
+                asteroids_state_n[6] <= 1'b1; // turn on small 4th asteroid
+            end else if (asteroids_state[4]) begin
+                asteroids_state_n[4] <= 1'b0; // turn off small 2nd asteroid
+            end
+        end
+        if (asteroid_hit[2])
+            asteroids_state_n[5] <= 1'b0; // turn off small 3rd asteroid
+        if (asteroid_hit[3])
+            asteroids_state_n[6] <= 1'b0; // turn off small 4th asteroid
     end
-    if (asteroid_hit[2])
-        asteroids_state_n[5] <= 1'b0; // turn off small 3rd asteroid
-    if (asteroid_hit[3])
-        asteroids_state_n[6] <= 1'b0; // turn off small 4th asteroid
 end
 
-wire [$clog2(WIDTH )-1:0]asteroid_x_init = lfsr64out[50 +: $clog2(WIDTH)];
-wire [$clog2(HEIGHT)-1:0]asteroid_y_init = lfsr64out[40 +: $clog2(HEIGHT)]; // reuse bits, but not in same position
+// one bit less, to make sure we are never outside the screen , without bothering with modulu
+wire [$clog2(WIDTH )-1:0]asteroid_x_init = {1'b0, lfsr64out[50 +: ($clog2(WIDTH ) - 1)]};
+wire [$clog2(HEIGHT)-1:0]asteroid_y_init = {1'b0, lfsr64out[40 +: ($clog2(HEIGHT) - 1)]}; // reuse bits, but not in same position
 logic [3:0][$clog2(WIDTH )-1:0]asteroid_x_out;
 logic [3:0][$clog2(HEIGHT)-1:0]asteroid_y_out;
 
@@ -181,8 +205,8 @@ generate
             .vga_chain_in(vga_chain_asteroid[gi]),
             .vga_chain_out(vga_chain_asteroid[gi+1]),
             .vsync(vsync),
-            .draw_mask(!game_over && asteroid_on[gi] && ((XLARGE == 1) || start_done)), // if XLARGE allow sprite on start
-            .start_done(((gi == 0) && XLARGE) ? start_done : 1'b1), // start_done only for 1st asteroid when XLARGE.
+            .draw_mask(!game_over && asteroid_on[gi] && ((XLARGE == 1) || game_begin)), // if XLARGE allow sprite on start
+            .start_done(((gi == 0) && XLARGE) ? start_done : 1'b1), // game_begin only for 1st asteroid when XLARGE.
             .ast_type(
                 // 1st asteroid can be any of 3 sizes, or XLARGE at the opening screen, if enabled
                 (gi == 0) ? ((XLARGE & ~start_done) ? AST_XLARGE : asteroids_state[0] ? AST_LARGE : asteroids_state[1] ? AST_MED : AST_SMALL) :

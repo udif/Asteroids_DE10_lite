@@ -125,31 +125,31 @@ localparam HEIGHT = 480;
 //=======================================================
 
 // clock signals
-wire				clk_25;
-wire				clk_50;
-wire				clk_100;
+wire clk_25;
+wire clk_50;
+wire clk_100;
 
 // Screens signals
-wire	[31:0]	pxl_x;
-wire	[31:0]	pxl_y;
-wire	[7:0]		lcd_db;
-wire				lcd_reset;
-wire				lcd_wr;
-wire				lcd_d_c;
-wire				lcd_rd;
-wire				lcd_buzzer;
-wire				lcd_status_led;
+wire [31:0]pxl_x;
+wire [31:0]pxl_y;
+wire  [7:0]lcd_db;
+wire       lcd_reset;
+wire       lcd_wr;
+wire       lcd_d_c;
+wire       lcd_rd;
+wire       lcd_buzzer;
+wire       lcd_status_led;
 
 // Periphery signals
-wire	A;
-wire	B;
-wire	Select;
-wire	Start;
-wire	Right;
-wire	Left;
-wire	Up;
-wire	Down;
-wire [11:0]	Wheel;
+wire       A;
+wire       B;
+wire       Select;
+wire       Start;
+wire       Right;
+wire       Left;
+wire       Up;
+wire       Down;
+wire [11:0]Wheel;
 
 //
 // The VGA chain starts with a black screen and ends with a complete picture
@@ -178,6 +178,8 @@ wire resetN = ~Start;
 //
 // Asteroid code starts here
 //
+
+reg game_begin_d, game_begin;
 
 // free running 64-bit LFSR for random number sequence
 wire [63:0]lfsr64out;
@@ -337,16 +339,15 @@ reg [SCORE_DIGITS-1:0][3:0]score;
 vga vga_chain_score ( /* .clk(clk_25) */ ) ;
 vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
 
-logic [6:0]ast_points;
+logic [10:0]ast_points;
 
 score_box #(
 	.DIGITS(SCORE_DIGITS)
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.add(start_done & ~game_over), // always add during game, we make sure it is 0 when nothing hits
-	.sum(ast_points), // How much to add (use BCD!)
-	.result(score)
+	.sum((SCORE_DIGITS*4)'(ast_points)), // How much to add (use BCD!)
+	.score(score)
 );
 
 //
@@ -422,9 +423,9 @@ localparam NUM_LIVES = 3;
 localparam MAX_NUM_LIVES = 10;
 
 wire bonus = (score[3:0] == (8'b0)) && (score > 0);
-// start_done && v_sync_pulese is 1/60 sec after start_done
+// game_begin && v_sync_pulese is 1/60 sec after game_begin
 logic [3:0]asteroid_en;
-wire die = start_done && vga_chain_ship.t.en && |asteroid_en; // for the time being
+wire die = game_begin && vga_chain_ship.t.en && |asteroid_en; // for the time being
 
 // "lives" counter
 wire [$clog2(MAX_NUM_LIVES+1)-1:0]lives;
@@ -515,13 +516,14 @@ Asteroid_quad #(
 	.vsync(v_sync_pulse),
 	.draw_mask(~game_over),
 	.start_done(start_done),
+	.game_begin(game_begin),
 	.game_over(game_over),
-    .new_level(start_done & ~start_done_d & v_sync_pulse),
+    .new_level(game_begin & ~game_begin_d & v_sync_pulse),
 	.torpedo_en(torpedo_en),
 	.torpedo_hit(torpedo_hit),
 	.asteroid_en(asteroid_en),
+	.Debug_Bus(Debug_Bus),
 	.ast_points(ast_points)
-	//.Debug_Bus(Debug_Bus)
 );
 
 vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
@@ -562,20 +564,22 @@ gameover gameover_rom_inst (
 //
 // Opening screen
 //
-reg [7:0]start_cnt;
-reg start_done, start_done_d;
+reg [8:0]start_cnt;
+reg start_done;
 always_ff @(posedge clk_25 or negedge resetN) begin
 	if (~resetN) begin
 		start_cnt <= '0;
 		start_done <= '0;
-		start_done_d <= '0;
+		game_begin_d <= '0;
+		game_begin <= '0;
 	end else if (v_sync_pulse) begin
 		if (start_cnt != '1)
 			start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
-		else begin
-			start_done_d <= start_done;
+		else
+			game_begin <= 1'b1;
+		if (start_cnt[7:0] == '1)
 			start_done <= 1'b1;
-		end
+		game_begin_d <= game_begin;
 	end
 end
 
@@ -604,7 +608,7 @@ Draw_Sprite #(
 	.center_x(),
 	.center_y(),
 	.sin_val(18'h0), // straight up, sin(90)
-	.cos_val({1'b0, start_cnt, 9'h1ff}), // scaled cos(90)
+	.cos_val({1'b0, start_cnt[7:0], 9'h1ff}), // scaled cos(90)
 	.draw_mask(~start_done),
 	.mem_width(ASTEROIDS_WIDTH), // same as width in this case
 	.sprite_rd(),
