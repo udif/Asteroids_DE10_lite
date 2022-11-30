@@ -1,5 +1,8 @@
 // Hexadecimal Number Bitmap
 // Designed for up to 8 digits
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 
 module Draw_Score #(
 	parameter WIDTH=640,

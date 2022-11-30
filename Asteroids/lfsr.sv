@@ -1,4 +1,5 @@
 module lfsr #(
+    // just played with bits and TB until found one that does 2^N-1
     parameter LFSR=11'h481
 ) (
     input clk,

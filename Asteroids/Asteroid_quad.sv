@@ -5,6 +5,10 @@
 // used for the game opening sequence.
 // If multiple Asteroid_quad are instanciated, only one will have XLARGE set.
 //
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
+
 import asteroids::*;
 module Asteroid_quad #(
     parameter XLARGE = 0, // do we support XLARGE
@@ -32,7 +36,7 @@ module Asteroid_quad #(
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 );
 
-logic [3:0][$bits(150*212)-1:0]sprite_addr;
+logic [3:0][$bits(MEM_XLMS_WIDTH*MEM_XLMS_HEIGHT)-1:0]sprite_addr;
 logic [3:0][4:0]sprite_data;
 // asteroids state:
 // 2:0 are 1st asteroid, one-hot:
@@ -184,11 +188,11 @@ generate
             .q_b(sprite_data[1])
         );
     end else begin
-        asteroid_l_m_s_2p asteroid_inst_23 (
+        asteroid_l_m_s_2p asteroid_inst_01_lms (
             .clock(clk),
             // reduce address width to remove synthesis warnings
-            .address_a(sprite_addr[0][$bits(131*71)-1:0]),
-            .address_b(sprite_addr[1][$bits(131*71)-1:0]),
+            .address_a(sprite_addr[0]),
+            .address_b(sprite_addr[1]),
             .q_a(sprite_data[0]),
             .q_b(sprite_data[1])
         );
@@ -198,8 +202,8 @@ endgenerate
 asteroid_l_m_s_2p asteroid_inst_23 (
     .clock(clk),
     // reduce address width to remove synthesis warnings
-    .address_a(sprite_addr[2][$bits(131*71)-1:0]),
-    .address_b(sprite_addr[3][$bits(131*71)-1:0]),
+    .address_a(sprite_addr[2]),
+    .address_b(sprite_addr[3]),
     .q_a(sprite_data[2]),
     .q_b(sprite_data[3])
 );
@@ -219,7 +223,7 @@ generate
         // see comment above for the only case asteroid 1 is parent
         assign parent_asteroid[gi] = ((gi == 1) && asteroids_state[3] || (gi == 3)) ? 1'b1 : 1'b0;
         Asteroid_unit #(
-            .XLARGE((gi >= 2) ? 0 : 1), // only 1st can do XLARGE, but memory is shared with 1
+            .XLARGE(XLARGE & ((gi >= 2) ? 0 : 1)), // only 1st can do XLARGE, but memory is shared with 2nd
             .WIDTH(WIDTH),
             .HEIGHT(HEIGHT)
         ) asteroid_unit_inst (

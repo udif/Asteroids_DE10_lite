@@ -1,6 +1,10 @@
-// Designer: Mor (Mordechai) Dahan,
-// Sep. 2022
-// ***********************************************
+//
+// Handle a single torpedo
+// You can cascase multiple units to get multiple torpedos in space at the same time
+//
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 
 module Torpedo_Unit #(
 	parameter WIDTH = 640,
@@ -75,7 +79,7 @@ always @(posedge clk) begin
 end
 
 localparam XY_FRACTION = 7; // subpixel fraction bits
-wire signed [1+XY_W+XY_FRACTION-1:0]t_speed = {1'b0, 10'd5,{XY_FRACTION{1'b0}}}; // sign (always 0), int, fraction
+wire signed [1+XY_W+XY_FRACTION-1:0]t_speed = {1'b0, 10'd7,{XY_FRACTION{1'b0}}}; // sign (always 0), int, fraction
 reg	[$clog2(WIDTH )+XY_FRACTION-1:0]torpedo_x;
 reg	[$clog2(HEIGHT)+XY_FRACTION-1:0]torpedo_y;
 reg	signed [$clog2(WIDTH )+XY_FRACTION:0]torpedo_xd; // 1 extra bit for sign

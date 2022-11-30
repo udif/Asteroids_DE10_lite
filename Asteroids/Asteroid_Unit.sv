@@ -3,6 +3,9 @@
 // memory is shared with others asteroids and is outside this module
 // so is the random number source
 //
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 import asteroids::*;
 
 module Asteroid_unit #(
@@ -69,7 +72,7 @@ wire signed [17:0]cos_val;
 
 logic [1:0]tx;
 logic [1:0]ty; // temporary overflow flags
-wire signed [1+XY_W+XY_FRACTION-1:0]t_speed = {1'b0, 10'd3,{XY_FRACTION{1'b0}}}; // sign (always 0), int, fraction
+wire signed [1+XY_W+XY_FRACTION-1:0]t_speed = {1'b0, 10'd1,{XY_FRACTION{1'b0}}}; // sign (always 0), int, fraction
 logic [$clog2(WIDTH )+XY_FRACTION-1:0]asteroid_x;
 logic [$clog2(HEIGHT)+XY_FRACTION-1:0]asteroid_y;
 logic [$clog2(WIDTH )+XY_FRACTION-1:0]asteroid_x_n;
@@ -94,6 +97,7 @@ sin_cos sin_cos_inst (
 	.cos_val(cos_val)
 );
 
+// These are already defined in the package!
 //
 // Anim file (XLARGE)
 // Size:150x212
@@ -103,14 +107,13 @@ sin_cos sin_cos_inst (
 // Small:  (113,141) size (19,18)
 //
 // Anim file
-// Size:131x71
+// Size:113x71
 // Large:  (0,0)   size (75,71)
 // Med:    (75,0)  size (38,36)
 // Small:  (113,0) size (19,18)
-localparam MEM_WIDTH=XLARGE ? 150 : 113;
-localparam MEM_HEIGHT=XLARGE ? 212 : 71;
-localparam XLARGE_HEIGHT = 141;
-localparam L_M_S_BASE = XLARGE ? (XLARGE_HEIGHT * MEM_WIDTH) : 0;
+localparam MEM_WIDTH  = XLARGE ? MEM_XLMS_WIDTH  : MEM_LMS_WIDTH;
+localparam MEM_HEIGHT = XLARGE ? MEM_XLMS_HEIGHT : MEM_LMS_HEIGHT;
+localparam L_M_S_BASE = XLARGE ? (AST_XLARGE_HEIGHT * MEM_XLMS_WIDTH) : 0;
 
 logic [$clog2(MEM_WIDTH*MEM_HEIGHT)-1:0]anim_base;
 logic [$clog2(WIDTH )-1:0]sprite_width;
@@ -120,24 +123,26 @@ logic show_asteroid;
 always_comb begin
     case(ast_type)
         AST_XLARGE: begin
-            anim_base = XLARGE ? '0 : 'x;
-            sprite_width = XLARGE ? ($clog2(WIDTH ))'(MEM_WIDTH) : 'x;
-            sprite_height = XLARGE ? ($clog2(HEIGHT))'(XLARGE_HEIGHT) : 'x;
+            anim_base     = XLARGE ? '0 : 'x;
+            sprite_width  = XLARGE ? ($clog2(WIDTH ))'(AST_XLARGE_WIDTH)  : 'x;
+            sprite_height = XLARGE ? ($clog2(HEIGHT))'(AST_XLARGE_HEIGHT) : 'x;
         end
         AST_LARGE: begin
             anim_base = ($bits(anim_base))'(L_M_S_BASE + 0);
-            sprite_width = ($clog2(WIDTH ))'(75);
-            sprite_height = ($clog2(HEIGHT))'(71);
+            sprite_width  = ($clog2(WIDTH ))'(AST_LARGE_WIDTH);
+            sprite_height = ($clog2(HEIGHT))'(AST_LARGE_HEIGHT);
         end
         AST_MED: begin
             anim_base = ($bits(anim_base))'(L_M_S_BASE + 75);
-            sprite_width = ($clog2(WIDTH ))'(38);
-            sprite_height = ($clog2(HEIGHT))'(36);
+            sprite_width  = ($clog2(WIDTH ))'(AST_MED_WIDTH);
+            sprite_height = ($clog2(HEIGHT))'(AST_MED_HEIGHT);
         end
         AST_SMALL: begin
-            anim_base = XLARGE ? ($bits(anim_base))'(L_M_S_BASE + 113) : ($bits(anim_base))'(MEM_WIDTH * 36 + 71);
-            sprite_width = ($clog2(WIDTH ))'(19);
-            sprite_height = ($clog2(HEIGHT))'(18);
+            // To understandthis you need to see how the asteroids are packed in the PNG file
+            anim_base = XLARGE ? ($bits(anim_base))'(L_M_S_BASE + (AST_LARGE_WIDTH + AST_MED_WIDTH)) :
+                                 ($bits(anim_base))'(MEM_WIDTH * AST_MED_HEIGHT + AST_LARGE_WIDTH);
+            sprite_width  = ($clog2(WIDTH ))'(AST_SMALL_WIDTH);
+            sprite_height = ($clog2(HEIGHT))'(AST_SMALL_HEIGHT);
         end
         default: begin
             anim_base = 'x;
@@ -167,7 +172,7 @@ logic signed [$bits(t_speed)+$bits(cos_val)-2:0]asteroid_yd_t;
 always @(posedge clk) begin
     if (XLARGE & ~start_done) begin
         asteroid_x <= {($clog2(WIDTH ))'(WIDTH/2), (XY_FRACTION)'(0)};
-        asteroid_y <= {($clog2(HEIGHT))'(HEIGHT-142/2), (XY_FRACTION)'(0)};
+        asteroid_y <= {($clog2(HEIGHT))'(HEIGHT-AST_XLARGE_HEIGHT/2), (XY_FRACTION)'(0)};
     end else if (game_continue && new_asteroid) begin
         asteroid_x <= {asteroid_x_init, (XY_FRACTION)'(0)};
         asteroid_y <= {asteroid_y_init, (XY_FRACTION)'(0)};

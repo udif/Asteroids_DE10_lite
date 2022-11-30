@@ -1,7 +1,6 @@
-// Designer: Mor (Mordechai) Dahan,
-// Sep. 2022
-// ***********************************************
-
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 
 module Draw_Sprite #(
 	// screen size

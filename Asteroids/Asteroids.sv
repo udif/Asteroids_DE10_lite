@@ -531,7 +531,7 @@ generate
 	assign vga_chain_asteroid[0].t = vga_chain_lives.t;
 	for (ga = 0; ga < A_NUM ; ga = ga + 1) begin : ast_insts
 		Asteroid_quad #(
-			.XLARGE(1), // single instance so we must have one
+			.XLARGE((ga == 0) ? 1 : 0), // we need only one instance with XLARGE
 			.WIDTH(WIDTH),
 			.HEIGHT(HEIGHT)
 		) asteroid_quad_inst (

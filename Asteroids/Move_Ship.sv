@@ -1,6 +1,6 @@
-// Designer: Mor (Mordechai) Dahan,
-// Sep. 2022
-// ***********************************************
+//
+// Copyright (C) 2022 Udi Finkelstein
+//
 
 `define SIGN_EXTEND(bits, vec) {{(bits - $bits(vec)){vec[$bits(vec)-1]}}, vec}
 `define ZERO_PAD(bits, vec) {{(bits - $bits(vec)){1'b0}}, vec}

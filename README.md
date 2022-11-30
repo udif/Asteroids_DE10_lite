@@ -66,6 +66,7 @@ Resources
 Some, but not all, of the source resoureces used by this project requires attribution, and some requires describing any modifications done to the original material.
 Nevertheless, we list all resources used, even those not requiring attribution, to clear any question that might arise regarding the origin of any asserts in the game.
 
+## Images
 * Main ship is based on:  
 https://foozlecc.itch.io/void-main-ship  
 (License: [CC0](https://creativecommons.org/share-your-work/public-domain/cc0/) )
@@ -80,3 +81,11 @@ Only a subset of the asteroids in this collection were used, and those were scal
 
 * ASTEROIDS Logo is taken from https://commons.wikimedia.org/wiki/File:Asteroids_arcade_logo.png
 (License: Public Domain)
+
+## YouTube Video:
+Clip:  
+Infected Vibes  
+by Alejandro Magaña (A. M.)  
+https://mixkit.co/free-stock-music/mood/upbeat/  
+License:  
+https://mixkit.co/license/#musicFree  
