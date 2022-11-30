@@ -21,6 +21,7 @@ module Asteroid_quad #(
     input draw_mask,
     input start_done,
     input game_begin,
+    input game_continue,
     input game_over,
     input  new_level,
     input  [T_NUM-1:0]torpedo_en,
@@ -71,7 +72,7 @@ logic [6:0]ast_points_hex;
 always_ff @(posedge clk) begin
     // only 1st asteroid can be large
     points <= '0;
-    if (game_begin && vsync) begin
+    if (game_continue && vsync) begin
         if (asteroids_state[0] & ~asteroids_state_n[0])
             points[0] <= ($bits(points[0]))'(5'h2);
         else if (asteroids_state[1] & ~asteroids_state_n[1])
@@ -174,6 +175,8 @@ assign phase_n_init[9:8] =
                                      ({2{lfsr64out[40]}}); // 00 or 11
 logic [3:0][$clog2(WIDTH )-1:0]asteroid_x_out;
 logic [3:0][$clog2(HEIGHT)-1:0]asteroid_y_out;
+logic [3:0][9:0]asteroid_phase_out;
+
 assign phase_n_init[7:0] = lfsr64out[41 +: 8];
 // initial asteroid position
 // we randomize it, unless it is an asteroid that broke off an existing one.
@@ -213,8 +216,16 @@ vga vga_chain_asteroid[0:4] ( /* .clk(clk_25) */ ) ;
 assign vga_chain_asteroid[0].t = vga_chain_in.t;
 assign vga_chain_out.t = vga_chain_asteroid[4].t;
 genvar gi, gj;
+
+// the only random asteroid is the 1st one
+// large  0 is split to 0,1, so medium 0 and medium 1 takes location and approximage phase from 0
+// medium 0 is split to 0,2, so 2 (small implied) and small 0 takes location and approximage phase from 0
+// medium 1 is split to 1,3, so 3 (small implied) and small 1 takes location and approximage phase from 1
+wire [3:0]parent_asteroid; // always 0 or 1
 generate
     for (gi = 0; gi < 4; gi = gi + 1) begin : asteroids
+        // see comment above for the only case asteroid 1 is parent
+        assign parent_asteroid[gi] = ((gi == 1) && asteroids_state[3] || (gi == 3)) ? 1'b1 : 1'b0;
         Asteroid_unit #(
             .XLARGE((gi >= 2) ? 0 : 1), // only 1st can do XLARGE, but memory is shared with 1
             .WIDTH(WIDTH),
@@ -222,21 +233,23 @@ generate
         ) asteroid_unit_inst (
             .clk(clk),
             .resetN(resetN),
-            // the only random asteroid is the 1st one
-            // large  0 is split to 0,1, so medium 0 and medium 1 takes location and approximage phase from 0
-            // medium 0 is split to 0,2, so 2 (small implied) and small 0 takes location and approximage phase from 0
-            // medium 1 is split to 1,3, so 3 (small implied) and small 1 takes location and approximage phase from 1
-            .asteroid_x_init(((gi == 0) && new_level_int) ? asteroid_x_init : asteroid_x_out[((gi == 1) && asteroids_state[4] || (gi == 3)) ? 1 : 0]),
-            .asteroid_y_init(((gi == 0) && new_level_int) ? asteroid_y_init : asteroid_y_out[((gi == 1) && asteroids_state[4] || (gi == 3)) ? 1 : 0]),
+            .asteroid_x_init(((gi == 0) && new_level_int) ? asteroid_x_init : asteroid_x_out[{1'b0, parent_asteroid[gi]}]),
+            .asteroid_y_init(((gi == 0) && new_level_int) ? asteroid_y_init : asteroid_y_out[{1'b0, parent_asteroid[gi]}]),
             .asteroid_x_out(asteroid_x_out[gi]),
             .asteroid_y_out(asteroid_y_out[gi]),
-            .phase_n(((gi == 0) && new_level_int) ? phase_n_init : (asteroid_phase_out + {{2{phase_n_init[7]}}, phase_n_init[7:0]})),
+            .asteroid_phase_out(asteroid_phase_out[gi]),
+            // split the 2 asteroids 90 degrees apart
+            .phase_n(((gi == 0) && new_level_int) ? phase_n_init : // new large asteroid
+                                                    // give 2 new med/small asteroids new phase based on original one wth up to +-45 degrees off
+                                                    // the pairs that split are (0,1), (0,2) and (1,3) => gi[0]^gi[1] will give unique ID in both cases
+                                                    (asteroid_phase_out[{1'b0, parent_asteroid[gi]}] + {{3{phase_n_init[7]}}, (gi[0]^gi[1]), phase_n_init[5:0]})),
             .phase_inc_n(lfsr64out[gi*4 +: 4]),
             .vga_chain_in(vga_chain_asteroid[gi]),
             .vga_chain_out(vga_chain_asteroid[gi+1]),
             .vsync(vsync),
             .draw_mask(!game_over && asteroid_on[gi] && ((XLARGE == 1) || game_begin)), // if XLARGE allow sprite on start
             .start_done(((gi == 0) && XLARGE) ? start_done : 1'b1), // game_begin only for 1st asteroid when XLARGE.
+            .game_continue(game_continue),
             .ast_type(
                 // 1st asteroid can be any of 3 sizes, or XLARGE at the opening screen, if enabled
                 (gi == 0) ? ((XLARGE & ~start_done) ? AST_XLARGE : asteroids_state[0] ? AST_LARGE : asteroids_state[1] ? AST_MED : AST_SMALL) :

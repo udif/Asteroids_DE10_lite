@@ -178,6 +178,7 @@ wire resetN = ~Start;
 //
 
 reg game_begin_d, game_begin;
+reg game_continue_d, game_continue;
 
 // free running 64-bit LFSR for random number sequence
 wire [63:0]lfsr64out;
@@ -511,6 +512,7 @@ Asteroid_quad #(
 	.draw_mask(~game_over),
 	.start_done(start_done),
 	.game_begin(game_begin),
+	.game_continue(game_continue),
 	.game_over(game_over),
     .new_level(game_begin & ~game_begin_d & v_sync_pulse),
 	.torpedo_en(torpedo_en),
@@ -557,6 +559,9 @@ gameover gameover_rom_inst (
 
 //
 // Opening screen
+// count twice, once for opening screen
+// the other is for new asteroid wave delay
+// this should happen each time we spawn new large asteroids
 //
 reg [8:0]start_cnt;
 reg start_done;
@@ -567,18 +572,22 @@ always_ff @(posedge clk_25 or negedge resetN) begin
 		game_begin_d <= '0;
 		game_begin <= '0;
 	end else if (die) begin
-		start_cnt <= '1;
+		// spawn a new wave of large asteroids
+		start_cnt <= 9'h0ff;
 		start_done <= 1'b1;
-		game_begin_d <= '0;
-		game_begin <= 1'b0;
+		game_continue_d <= '0;
+		game_continue <= 1'b0;
 	end else if (v_sync_pulse) begin
 		if (start_cnt != '1)
 			start_cnt <= start_cnt + {{($bits(start_cnt)-1){1'b0}}, 1'b1};
-		else
+		else begin
 			game_begin <= 1'b1;
+			game_continue <= 1'b1;
+		end
 		if (start_cnt[7:0] == '1)
 			start_done <= 1'b1;
 		game_begin_d <= game_begin;
+		game_continue_d <= game_continue;
 	end
 end
 

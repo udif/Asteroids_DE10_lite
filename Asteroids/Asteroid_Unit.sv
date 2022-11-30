@@ -25,6 +25,7 @@ module Asteroid_unit #(
     input  vsync, // already in 1-cycle pulse form
     input draw_mask,
     input start_done,
+    input game_continue,
     input ast_t ast_type, // asteroid type to display
     input  new_asteroid, // start displaying asteroid
     input  asteroid_hit, // stop displaying asteroid
@@ -167,10 +168,10 @@ always @(posedge clk) begin
     if (XLARGE & ~start_done) begin
         asteroid_x <= {($clog2(WIDTH ))'(WIDTH/2), (XY_FRACTION)'(0)};
         asteroid_y <= {($clog2(HEIGHT))'(HEIGHT-142/2), (XY_FRACTION)'(0)};
-    end else if (new_asteroid) begin
+    end else if (game_continue && new_asteroid) begin
         asteroid_x <= {asteroid_x_init, (XY_FRACTION)'(0)};
         asteroid_y <= {asteroid_y_init, (XY_FRACTION)'(0)};
-    end else if (vsync) begin
+    end else if (game_continue && vsync) begin
         // update position every vsync (60Hz)
         // we use fractional positioning for smooth movement
         asteroid_x <= asteroid_x_mod;
@@ -180,16 +181,16 @@ always @(posedge clk) begin
         // asteroid on opening screen is rotating at fixed rate of:
         // (20/1024)*360 degrees, every 1/60sec
         phase <= phase + ($bits(phase))'(20);
-    end else if (new_asteroid) begin
+    end else if (game_continue && new_asteroid) begin
         // generate random angle, rotation speed and location
         phase <= phase_n;
         phase_inc <= phase_inc_n;
         asteroid_xd_t <= sin_val * -t_speed;
         asteroid_yd_t <= cos_val * -t_speed;
-    end else if (vsync) begin
+    end else if (game_continue && vsync) begin
         phase <= phase + ($bits(phase))'(phase_inc);
     end
-    if (new_asteroid)
+    if (game_continue && new_asteroid)
         show_asteroid <= 1'b1;
     else if (asteroid_hit)
         show_asteroid <= 1'b0;
