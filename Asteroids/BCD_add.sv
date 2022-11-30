@@ -1,9 +1,8 @@
 module BCD_add #(
     parameter DIGITS=4 // How many digits
 ) (
-    input clk,
-    input  [DIGITS-1:0][3:0]digits, // digit to display
-    input  [DIGITS-1:0][3:0]sum, // digit to display
+    input  [DIGITS-1:0][3:0]num1, // digit to display
+    input  [DIGITS-1:0][3:0]num2, // digit to display
     output reg [DIGITS-1:0][3:0]result
 );
 
@@ -16,11 +15,10 @@ genvar i;
 generate
     for (i = 0; i < DIGITS; i = i + 1) begin: digit
         bcd_digit bd(
-            .clk(clk),
             .cin(carry[i]),
             .cout(carry[i+1]),
-            .a(digits[i]),
-            .b(sum[i]),
+            .a(num1[i]),
+            .b(num2[i]),
             .c(result[i])
         );
     end
@@ -29,7 +27,6 @@ endgenerate
 endmodule
 
 module bcd_digit (
-    input clk,
     input cin,
     input [3:0]a,
     input [3:0]b,

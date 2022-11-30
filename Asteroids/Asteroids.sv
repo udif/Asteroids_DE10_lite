@@ -6,12 +6,12 @@
 `define ENABLE_CLOCK1
 `define ENABLE_CLOCK2
 `define ENABLE_SDRAM
-`define ENABLE_HEX0
-`define ENABLE_HEX1
-`define ENABLE_HEX2
-`define ENABLE_HEX3
-`define ENABLE_HEX4
-`define ENABLE_HEX5
+//`define ENABLE_HEX0
+//`define ENABLE_HEX1
+//`define ENABLE_HEX2
+//`define ENABLE_HEX3
+//`define ENABLE_HEX4
+//`define ENABLE_HEX5
 `define ENABLE_KEY
 `define ENABLE_LED
 `define ENABLE_SW
@@ -54,21 +54,27 @@ module Asteroids(
 
 	//////////// SEG7: 3.3-V LVTTL //////////
 `ifdef ENABLE_HEX0
+`define HEX
 	output		     [7:0]		HEX0,
 `endif
 `ifdef ENABLE_HEX1
+`define HEX
 	output		     [7:0]		HEX1,
 `endif
 `ifdef ENABLE_HEX2
+`define HEX
 	output		     [7:0]		HEX2,
 `endif
 `ifdef ENABLE_HEX3
+`define HEX
 	output		     [7:0]		HEX3,
 `endif
 `ifdef ENABLE_HEX4
+`define HEX
 	output		     [7:0]		HEX4,
 `endif
 `ifdef ENABLE_HEX5
+`define HEX
 	output		     [7:0]		HEX5,
 `endif
 
@@ -178,7 +184,7 @@ wire resetN = ~Start;
 //
 
 reg game_begin_d, game_begin;
-reg game_continue_d, game_continue;
+reg game_continue;
 
 // free running 64-bit LFSR for random number sequence
 wire [63:0]lfsr64out;
@@ -188,6 +194,15 @@ lfsr64 lfsr64_inst (
     .out(lfsr64out)
 );
 
+// we get 64 random bits each cycle, and we mix them in 4 different ways,
+// which should be enough as a pseudo random source for 4 different asteroids
+// we would love to use the streaming operator but quartus doesn't support it
+wire [3:0][63:0]lfsr64out_mixed = {
+    lfsr64out,
+    {lfsr64out[15:0], lfsr64out[63:16]},
+    {lfsr64out[31:0], lfsr64out[63:32]},
+    {lfsr64out[47:0], lfsr64out[63:48]}
+}; // each asteroid has its own set of bits
 
 localparam DEBUG_SIZE=1;
 //wire [DEBUG_SIZE-1:0][63:0]debug_out;
@@ -223,11 +238,6 @@ pll25	pll25_inst (
 	);
 
 
-//7-Seg default assign (all leds are off)
-wire [23:0]Debug_Bus;
-wire [6*8-1:0]Hex;
-assign {HEX5, HEX4, HEX3, HEX2, HEX1, HEX0} = Hex;
-
 // periphery_control module for external units: joystick, wheel and buttons (A,B, Select and Start) 
 periphery_control periphery_control_inst(
 	.clk(clk_25),
@@ -252,6 +262,12 @@ periphery_control periphery_control_inst(
 	assign LEDR[7] = Up; 		// UP
 	assign LEDR[6] = Down; 		// DOWN
 
+//7-Seg default assign (all leds are off)
+`ifdef HEX
+wire [23:0]Debug_Bus;
+wire [6*8-1:0]Hex;
+assign {HEX5, HEX4, HEX3, HEX2, HEX1, HEX0} = Hex;
+
 genvar gi;
 generate
 	for (gi = 0; gi < 6; gi = gi + 1) begin: ss
@@ -261,6 +277,7 @@ generate
 		);
 	end
 endgenerate
+`endif
 
 //
 // Shared animation pulse
@@ -332,16 +349,17 @@ localparam SCORE_DIGITS = 6;
 reg [SCORE_DIGITS-1:0][3:0]score;
 
 vga vga_chain_score ( /* .clk(clk_25) */ ) ;
-vga vga_chain_asteroid ( /* .clk(clk_25) */ ) ;
+vga vga_chain_asteroid[0:A_NUM] ( /* .clk(clk_25) */ ) ;
 
-logic [10:0]ast_points;
+logic [A_NUM-1:0][SCORE_DIGITS-1:0][3:0]ast_points;
 
 score_box #(
+	.NUM(A_NUM),
 	.DIGITS(SCORE_DIGITS)
 ) score_box_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.sum((SCORE_DIGITS*4)'(ast_points)), // How much to add (use BCD!)
+	.sum(ast_points), // How much to add (use BCD!)
 	.score(score)
 );
 
@@ -419,7 +437,7 @@ localparam MAX_NUM_LIVES = 10;
 
 wire bonus = (score[3:0] == (8'b0)) && (score > 0);
 // game_begin && v_sync_pulese is 1/60 sec after game_begin
-logic [3:0]asteroid_en;
+logic [A_NUM-1:0][3:0]asteroid_en;
 wire die = game_begin && vga_chain_ship.t.en && |asteroid_en; // for the time being
 
 // "lives" counter
@@ -498,30 +516,35 @@ localparam GAMEOVER_MASK=12'h000;
 wire  [$clog2(WIDTH * HEIGHT)-1:0]gameover_addr;
 wire [1:0]gameover_data;
 
-Asteroid_quad #(
-	.XLARGE(1), // single instance so we must have one
-	.WIDTH(WIDTH),
-	.HEIGHT(HEIGHT)
-) asteroid_quad_inst (
-	.clk(clk_25),
-	.resetN(resetN),
-	.lfsr64out(lfsr64out),
-	.vga_chain_in(vga_chain_lives),
-	.vga_chain_out(vga_chain_asteroid),
-	.vsync(v_sync_pulse),
-	.draw_mask(~game_over),
-	.start_done(start_done),
-	.game_begin(game_begin),
-	.game_continue(game_continue),
-	.game_over(game_over),
-    .new_level(game_begin & ~game_begin_d & v_sync_pulse),
-	.torpedo_en(torpedo_en),
-	.torpedo_hit(torpedo_hit),
-	.asteroid_en(asteroid_en),
-	.Debug_Bus(Debug_Bus),
-	.ast_points(ast_points)
-);
-
+genvar ga; // asteroids
+generate
+	assign vga_chain_asteroid[0].t = vga_chain_lives.t;
+	for (ga = 0; ga < A_NUM ; ga = ga + 1) begin : ast_insts
+		Asteroid_quad #(
+			.XLARGE(1), // single instance so we must have one
+			.WIDTH(WIDTH),
+			.HEIGHT(HEIGHT)
+		) asteroid_quad_inst (
+			.clk(clk_25),
+			.resetN(resetN),
+			.lfsr64out(lfsr64out_mixed[ga]),
+			.vga_chain_in(vga_chain_asteroid[ga]),
+			.vga_chain_out(vga_chain_asteroid[ga+1]),
+			.vsync(v_sync_pulse),
+			.draw_mask(~game_over),
+			.start_done(start_done),
+			.game_begin(game_begin),
+			.game_continue(game_continue),
+			.game_over(game_over),
+			.new_level(game_begin & ~game_begin_d & v_sync_pulse),
+			.torpedo_en(torpedo_en),
+			.torpedo_hit(torpedo_hit),
+			.asteroid_en(asteroid_en[ga]),
+			//.Debug_Bus(Debug_Bus),
+			.ast_points(ast_points[ga])
+		);
+	end
+endgenerate
 vga vga_chain_gameover ( /* .clk(clk_25) */ ) ;
 
 Draw_Sprite #(
@@ -531,7 +554,7 @@ Draw_Sprite #(
 ) gameover_inst (
 	.clk(clk_25),
 	.resetN(resetN),
-	.vga_chain_in(vga_chain_asteroid),
+	.vga_chain_in(vga_chain_asteroid[A_NUM]),
 	.vga_chain_out(vga_chain_gameover),
 	.topLeft_x((WIDTH-GAMEOVER_WIDTH)/2),
 	.topLeft_y((HEIGHT-GAMEOVER_HEIGHT)/2),
@@ -575,7 +598,6 @@ always_ff @(posedge clk_25 or negedge resetN) begin
 		// spawn a new wave of large asteroids
 		start_cnt <= 9'h0ff;
 		start_done <= 1'b1;
-		game_continue_d <= '0;
 		game_continue <= 1'b0;
 	end else if (v_sync_pulse) begin
 		if (start_cnt != '1)
@@ -587,7 +609,6 @@ always_ff @(posedge clk_25 or negedge resetN) begin
 		if (start_cnt[7:0] == '1)
 			start_done <= 1'b1;
 		game_begin_d <= game_begin;
-		game_continue_d <= game_continue;
 	end
 end
 

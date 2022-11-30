@@ -32,16 +32,6 @@ module Asteroid_quad #(
 	//,output [DEBUG_SIZE-1:0][63:0]debug_out
 );
 
-// we get 64 random bits each cycle, and we mix them in 4 different ways,
-// which should be enough as a pseudo random source for 4 different asteroids
-// we would love to use the streaming operator but quartus doesn't support it
-wire [3:0][63:0]lfsr64out_mixed = {
-    lfsr64out,
-    {lfsr64out[15:0], lfsr64out[63:16]},
-    {lfsr64out[31:0], lfsr64out[63:32]},
-    {lfsr64out[47:0], lfsr64out[63:48]}
-}; // each asteroid has its own set of bits
-
 logic [3:0][$bits(150*221)-1:0]sprite_addr;
 logic [3:0][4:0]sprite_data;
 // asteroids state:
