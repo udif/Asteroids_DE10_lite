@@ -409,7 +409,7 @@ vga vga_chain_torpedos[0:T_NUM] ( /* .clk(clk_25) */ ) ;
 
 genvar th, t; // torpedos
 generate
-	assign torpedos[0] = A;
+	assign torpedos[0] = A & game_continue;
 	assign vga_chain_torpedos[0].t = vga_chain_score.t;
 	for (t = 0; t < T_NUM ; t = t + 1) begin : tor_insts
 		Torpedo_Unit torpedo_inst (
