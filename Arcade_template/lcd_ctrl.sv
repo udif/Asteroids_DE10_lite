@@ -93,7 +93,7 @@ always_comb begin
 	first_pixle = (pxl_x == 0) & (pxl_y == 0);
 end
 	
-enum int unsigned { 
+typedef enum int unsigned { 
 	HOLD 			= 1 << 0,
 	CMD_1_d		= 1 << 1,
 	CMD_1_u		= 1 << 2,
@@ -127,7 +127,8 @@ enum int unsigned {
 	DATA_e_1_u	= 1 <<26,
 	DATA_e_2_d	= 1 <<27,
 	DATA_e_2_u	= 1 <<28
-	} state, next_state;
+} state_t;
+logic [state_t.num()-1:0] state, next_state;
 	
 always_comb 
 	begin
