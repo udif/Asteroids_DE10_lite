@@ -132,7 +132,7 @@ logic [state_t.num()-1:0] state, next_state;
 	
 always_comb 
 	begin
-		next_state = '0;
+		next_state = 1<<HOLD;
 		cmd_lcd_wr = 1'b1;
 		count_start = 0;
 		add_init = 0;
