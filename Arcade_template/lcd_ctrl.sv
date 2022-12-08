@@ -93,7 +93,6 @@ always_comb begin
 	first_pixle = (pxl_x == 0) & (pxl_y == 0);
 end
 
-`define ONE_HOT
 `ifdef ONE_HOT
 `define P(x) (1 << (x))
 `define W(x) (x)
