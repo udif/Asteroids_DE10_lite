@@ -94,7 +94,7 @@ always_comb begin
 end
 	
 enum int unsigned { 
-	HOLD 			= 0, 
+	HOLD 			= 32'h00_00_00_01, 
 	
 	CMD_1_d		= 32'h00_00_00_02,
 	CMD_1_u		= 4,
