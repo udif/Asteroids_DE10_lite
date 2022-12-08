@@ -92,43 +92,52 @@ always_comb begin
 	last_pixle = last_line & (pxl_y == 479);
 	first_pixle = (pxl_x == 0) & (pxl_y == 0);
 end
-	
+
+`define ONE_HOT
+`ifdef ONE_HOT
+`define P(x) (1 << (x))
+`define W(x) (x)
+`else
+`define P(x) (x)
+`define W(x) ($clog2(x))
+`endif
+
 typedef enum int unsigned { 
-	HOLD 			= 1 << 0,
-	CMD_1_d		= 1 << 1,
-	CMD_1_u		= 1 << 2,
-	CMD_2_d		= 1 << 3,
-	CMD_2_u		= 1 << 4,
-	DATA_1_d	= 1 << 5,
-	DATA_1_u	= 1 << 6,
-	DATA_2_d	= 1 << 7,
-	DATA_2_u	= 1 << 8,
-	DELAY_1		= 1 << 9,
-	IDLE		= 1 <<10,
-//	CMD_3_d		= 1 <<,
-//	CMD_3_u		= 1 <<,
-//	CMD_4_d		= 1 <<,
-//	CMD_4_u		= 1 <<,
-	CMD_5_d		= 1 <<11,
-	CMD_5_u		= 1 <<12,
-	CMD_6_d		= 1 <<13,
-	CMD_6_u		= 1 <<14,
-	DELAY_2		= 1 <<15,
-	RGB_CMD_1_d = 1 <<16,
-	RGB_CMD_1_u = 1 <<17,
-	RGB_CMD_2_d	= 1 <<18,
-	RGB_CMD_2_u	= 1 <<19,
-	RGB_wait	= 1 <<20,
-	CMD_e_1_d	= 1 <<21,
-	CMD_e_1_u	= 1 <<22,
-	CMD_e_2_d	= 1 <<23,
-	CMD_e_2_u	= 1 <<24,
-	DATA_e_1_d	= 1 <<25,
-	DATA_e_1_u	= 1 <<26,
-	DATA_e_2_d	= 1 <<27,
-	DATA_e_2_u	= 1 <<28
+	HOLD 		= `P( 0),
+	CMD_1_d		= `P( 1),
+	CMD_1_u		= `P( 2),
+	CMD_2_d		= `P( 3),
+	CMD_2_u		= `P( 4),
+	DATA_1_d	= `P( 5),
+	DATA_1_u	= `P( 6),
+	DATA_2_d	= `P( 7),
+	DATA_2_u	= `P( 8),
+	DELAY_1		= `P( 9),
+	IDLE		= `P(10),
+//	CMD_3_d		= `P(),
+//	CMD_3_u		= `P(),
+//	CMD_4_d		= `P(),
+//	CMD_4_u		= `P(),
+	CMD_5_d		= `P(11),
+	CMD_5_u		= `P(12),
+	CMD_6_d		= `P(13),
+	CMD_6_u		= `P(14),
+	DELAY_2		= `P(15),
+	RGB_CMD_1_d = `P(16),
+	RGB_CMD_1_u = `P(17),
+	RGB_CMD_2_d	= `P(18),
+	RGB_CMD_2_u	= `P(19),
+	RGB_wait	= `P(20),
+	CMD_e_1_d	= `P(21),
+	CMD_e_1_u	= `P(22),
+	CMD_e_2_d	= `P(23),
+	CMD_e_2_u	= `P(24),
+	DATA_e_1_d	= `P(25),
+	DATA_e_1_u	= `P(26),
+	DATA_e_2_d	= `P(27),
+	DATA_e_2_u	= `P(28)
 } state_t;
-logic [state_t.num()-1:0] state, next_state;
+logic [`W(state_t.num())-1:0] state, next_state;
 	
 always_comb 
 	begin
