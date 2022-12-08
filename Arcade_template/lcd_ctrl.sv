@@ -93,40 +93,40 @@ always_comb begin
 	first_pixle = (pxl_x == 0) & (pxl_y == 0);
 end
 	
-typedef enum int unsigned { 
-	HOLD 			= 1 << 0,
-	CMD_1_d		= 1 << 1,
-	CMD_1_u		= 1 << 2,
-	CMD_2_d		= 1 << 3,
-	CMD_2_u		= 1 << 4,
-	DATA_1_d	= 1 << 5,
-	DATA_1_u	= 1 << 6,
-	DATA_2_d	= 1 << 7,
-	DATA_2_u	= 1 << 8,
-	DELAY_1		= 1 << 9,
-	IDLE		= 1 <<10,
-//	CMD_3_d		= 1 <<,
-//	CMD_3_u		= 1 <<,
-//	CMD_4_d		= 1 <<,
-//	CMD_4_u		= 1 <<,
-	CMD_5_d		= 1 <<11,
-	CMD_5_u		= 1 <<12,
-	CMD_6_d		= 1 <<13,
-	CMD_6_u		= 1 <<14,
-	DELAY_2		= 1 <<15,
-	RGB_CMD_1_d = 1 <<16,
-	RGB_CMD_1_u = 1 <<17,
-	RGB_CMD_2_d	= 1 <<18,
-	RGB_CMD_2_u	= 1 <<19,
-	RGB_wait	= 1 <<20,
-	CMD_e_1_d	= 1 <<21,
-	CMD_e_1_u	= 1 <<22,
-	CMD_e_2_d	= 1 <<23,
-	CMD_e_2_u	= 1 <<24,
-	DATA_e_1_d	= 1 <<25,
-	DATA_e_1_u	= 1 <<26,
-	DATA_e_2_d	= 1 <<27,
-	DATA_e_2_u	= 1 <<28
+typedef enum { 
+	HOLD,
+	CMD_1_d,
+	CMD_1_u,
+	CMD_2_d,
+	CMD_2_u,
+	DATA_1_d,
+	DATA_1_u,
+	DATA_2_d,
+	DATA_2_u,
+	DELAY_1,
+	IDLE,
+//	CMD_3_d,
+//	CMD_3_u,
+//	CMD_4_d,
+//	CMD_4_u,
+	CMD_5_d,
+	CMD_5_u,
+	CMD_6_d,
+	CMD_6_u,
+	DELAY_2,
+	RGB_CMD_1_d,
+	RGB_CMD_1_u,
+	RGB_CMD_2_d,
+	RGB_CMD_2_u,
+	RGB_wait,
+	CMD_e_1_d,
+	CMD_e_1_u,
+	CMD_e_2_d,
+	CMD_e_2_u,
+	DATA_e_1_d,
+	DATA_e_1_u,
+	DATA_e_2_d,
+	DATA_e_2_u
 } state_t;
 logic [state_t.num()-1:0] state, next_state;
 	
@@ -142,25 +142,25 @@ always_comb
 		rgb_on = 0;
 		case(state)
 			
-			HOLD: begin
+			1<<HOLD: begin
 						if (sw_0 == 1) begin
-							next_state = IDLE;
+							next_state = 1<<IDLE;
 							add_init = 1;
 							count_start = 1;
 							end
 						else begin
-							next_state = HOLD;
+							next_state = 1<<HOLD;
 							
 						end
 					end
 			
-			IDLE: begin
+			1<<IDLE: begin
 						if (count != 20000000) begin
-							next_state = IDLE;
+							next_state = 1<<IDLE;
 							add_init = 1;
 							end
 						else begin
-							next_state = CMD_1_d;
+							next_state = 1<<CMD_1_d;
 							count_start = 1;
 						end
 						if (count < 128) begin
@@ -168,241 +168,241 @@ always_comb
 						end
 					end
 			
-			CMD_1_d: begin
+			1<<CMD_1_d: begin
 							//lcd_d_c = 1;
-							next_state = CMD_1_u;
+							next_state = 1<<CMD_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			CMD_1_u: begin
+			1<<CMD_1_u: begin
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = CMD_2_d;
+							next_state = 1<<CMD_2_d;
 						end
 			
-			CMD_2_d: begin			
+			1<<CMD_2_d: begin			
 							//lcd_d_c = 1;
-							next_state = CMD_2_u;
+							next_state = 1<<CMD_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			CMD_2_u: begin
+			1<<CMD_2_u: begin
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h60E) begin
-								next_state = DATA_1_d;
+								next_state = 1<<DATA_1_d;
 							end
 							else begin
-								next_state = DELAY_1;
+								next_state = 1<<DELAY_1;
 								
 								
 							end
 						 end
 						 
 			
-			DATA_1_d: begin
+			1<<DATA_1_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = DATA_1_u;
+							next_state = 1<<DATA_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			DATA_1_u: begin
+			1<<DATA_1_u: begin
 							
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = DATA_2_d;
+							next_state = 1<<DATA_2_d;
 						end
 			
-			DATA_2_d: begin
+			1<<DATA_2_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = DATA_2_u;
+							next_state = 1<<DATA_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			DATA_2_u: begin
+			1<<DATA_2_u: begin
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
-							next_state = CMD_1_d;
+							next_state = 1<<CMD_1_d;
 
 						 end
 						 
 			
 			
-//			CMD_3_d: begin
-//							next_state = CMD_3_u;
+//			1<<CMD_3_d: begin
+//							next_state = 1<<CMD_3_u;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
 						 
-//			CMD_3_u: begin
+//			1<<CMD_3_u: begin
 //							cmd_lcd_wr = 1;
 //							
-//							next_state = CMD_4_d;
+//							next_state = 1<<CMD_4_d;
 //						 end
 //						 
-//			CMD_4_d: begin
-//							next_state = CMD_4_u;
+//			1<<CMD_4_d: begin
+//							next_state = 1<<CMD_4_u;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
 //						 
-//			CMD_4_u: begin
+//			1<<CMD_4_u: begin
 //							cmd_lcd_wr = 1;
 //							//add_next = 1;
-//							next_state = DELAY_1;
+//							next_state = 1<<DELAY_1;
 //							count_start = 1;
 //						 end
 						 
 						 
 			
-			DELAY_1: begin
+			1<<DELAY_1: begin
 							//lcd_d_c = 1;
 							if (count != 3000000) begin
-								next_state = DELAY_1;
+								next_state = 1<<DELAY_1;
 								cmd_lcd_d_c = 1;
 								end
 							else begin
-								next_state = CMD_5_d;
+								next_state = 1<<CMD_5_d;
 								
 							end
 						end
-			CMD_5_d: begin
-							next_state = CMD_5_u;
+			1<<CMD_5_d: begin
+							next_state = 1<<CMD_5_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
 						 
-			CMD_5_u: begin
+			1<<CMD_5_u: begin
 							cmd_lcd_wr = 1;
 							
-							next_state = CMD_6_d;
+							next_state = 1<<CMD_6_d;
 						 end
 						 
-			CMD_6_d: begin
-							next_state = CMD_6_u;
+			1<<CMD_6_d: begin
+							next_state = 1<<CMD_6_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
 						 
-			CMD_6_u: begin
+			1<<CMD_6_u: begin
 							cmd_lcd_wr = 1;
 							//add_next = 1;
-							next_state = DELAY_2;
+							next_state = 1<<DELAY_2;
 							count_start = 1;
 						 end
 			
-			DELAY_2: begin
+			1<<DELAY_2: begin
 							cmd_lcd_d_c = 1;
 							if (count != 3000000) begin
-								next_state = DELAY_2;
+								next_state = 1<<DELAY_2;
 								end
 							else begin
-								next_state = CMD_e_1_d;
+								next_state = 1<<CMD_e_1_d;
 								
 							end
 						end	
 						
 			///////
-			CMD_e_1_d: begin
+			1<<CMD_e_1_d: begin
 							//lcd_d_c = 1;
-							next_state = CMD_e_1_u;
+							next_state = 1<<CMD_e_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			CMD_e_1_u: begin
+			1<<CMD_e_1_u: begin
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = CMD_e_2_d;
+							next_state = 1<<CMD_e_2_d;
 						end
 			
-			CMD_e_2_d: begin			
+			1<<CMD_e_2_d: begin			
 							//lcd_d_c = 1;
-							next_state = CMD_e_2_u;
+							next_state = 1<<CMD_e_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			CMD_e_2_u: begin
+			1<<CMD_e_2_u: begin
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h636) begin
-								next_state = DATA_e_1_d;
+								next_state = 1<<DATA_e_1_d;
 							end
 							else begin
-								next_state = RGB_wait;
+								next_state = 1<<RGB_wait;
 								
 								
 							end
 						 end
 						 
 			
-			DATA_e_1_d: begin
+			1<<DATA_e_1_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = DATA_e_1_u;
+							next_state = 1<<DATA_e_1_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 						
-			DATA_e_1_u: begin
+			1<<DATA_e_1_u: begin
 							
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = DATA_e_2_d;
+							next_state = 1<<DATA_e_2_d;
 						end
 			
-			DATA_e_2_d: begin
+			1<<DATA_e_2_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = DATA_e_2_u;
+							next_state = 1<<DATA_e_2_u;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
 			
-			DATA_e_2_u: begin
+			1<<DATA_e_2_u: begin
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
-							next_state = CMD_e_1_d;
+							next_state = 1<<CMD_e_1_d;
 
 						 end
 			
 			///////
 				
-			RGB_CMD_1_d: begin
-								next_state = RGB_CMD_1_u;
+			1<<RGB_CMD_1_d: begin
+								next_state = 1<<RGB_CMD_1_u;
 								add_next = 1;
 								cmd_lcd_wr = 0;
 							end
 						
-			RGB_CMD_1_u: begin
+			1<<RGB_CMD_1_u: begin
 								cmd_lcd_wr = 1;
-								next_state = RGB_CMD_2_d;
+								next_state = 1<<RGB_CMD_2_d;
 							end
 			
-			RGB_CMD_2_d: begin			
-								next_state = RGB_CMD_2_u;
+			1<<RGB_CMD_2_d: begin			
+								next_state = 1<<RGB_CMD_2_u;
 								cmd_lcd_wr = 0;
 								//add_next = 1;
 							end
 			
-			RGB_CMD_2_u: begin
+			1<<RGB_CMD_2_u: begin
 			
 							cmd_lcd_wr = 1;	
-							next_state = RGB_wait;
+							next_state = 1<<RGB_wait;
 						 end		
 			
 			
-			RGB_wait: begin
-							next_state = RGB_wait;
+			1<<RGB_wait: begin
+							next_state = 1<<RGB_wait;
 							//count_start = 1;
 							rgb_on = 1;
 							cmd_lcd_wr = 0;
@@ -410,7 +410,7 @@ always_comb
 						 
 			default: 
 				begin
-					next_state = HOLD;
+					next_state = 1<<HOLD;
 				end
 		endcase
 	end
