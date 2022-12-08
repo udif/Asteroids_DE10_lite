@@ -413,10 +413,6 @@ always_comb
 					next_state[HOLD] = 1'b1;
 				end
 
-			default:
-				begin
-					next_state = 'x;
-				end
 		endcase
 	end
 
