@@ -140,7 +140,7 @@ always_comb
 		cmd_lcd_d_c = 0;
 		lcd_reset = 1;
 		rgb_on = 0;
-		unique case(state)
+		case(state)
 			
 			1<<HOLD: begin
 						if (sw_0 == 1) begin
@@ -413,6 +413,10 @@ always_comb
 					next_state[HOLD] = 1'b1;
 				end
 
+			default:
+				begin
+					next_state = 'x;
+				end
 		endcase
 	end
 
