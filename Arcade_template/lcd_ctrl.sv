@@ -144,23 +144,23 @@ always_comb
 			
 			1<<HOLD: begin
 						if (sw_0 == 1) begin
-							next_state = 1<<IDLE;
+							next_state[IDLE] = 1'b1;
 							add_init = 1;
 							count_start = 1;
 							end
 						else begin
-							next_state = 1<<HOLD;
+							next_state[HOLD] = 1'b1;
 							
 						end
 					end
 			
 			1<<IDLE: begin
 						if (count != 20000000) begin
-							next_state = 1<<IDLE;
+							next_state[IDLE] = 1'b1;
 							add_init = 1;
 							end
 						else begin
-							next_state = 1<<CMD_1_d;
+							next_state[CMD_1_d] = 1'b1;
 							count_start = 1;
 						end
 						if (count < 128) begin
@@ -170,7 +170,7 @@ always_comb
 			
 			1<<CMD_1_d: begin
 							//lcd_d_c = 1;
-							next_state = 1<<CMD_1_u;
+							next_state[CMD_1_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -179,12 +179,12 @@ always_comb
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = 1<<CMD_2_d;
+							next_state[CMD_2_d] = 1'b1;
 						end
 			
 			1<<CMD_2_d: begin			
 							//lcd_d_c = 1;
-							next_state = 1<<CMD_2_u;
+							next_state[CMD_2_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -193,10 +193,10 @@ always_comb
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h60E) begin
-								next_state = 1<<DATA_1_d;
+								next_state[DATA_1_d] = 1'b1;
 							end
 							else begin
-								next_state = 1<<DELAY_1;
+								next_state[DELAY_1] = 1'b1;
 								
 								
 							end
@@ -205,7 +205,7 @@ always_comb
 			
 			1<<DATA_1_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = 1<<DATA_1_u;
+							next_state[DATA_1_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -215,12 +215,12 @@ always_comb
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = 1<<DATA_2_d;
+							next_state[DATA_2_d] = 1'b1;
 						end
 			
 			1<<DATA_2_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = 1<<DATA_2_u;
+							next_state[DATA_2_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -229,14 +229,14 @@ always_comb
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
-							next_state = 1<<CMD_1_d;
+							next_state[CMD_1_d] = 1'b1;
 
 						 end
 						 
 			
 			
 //			1<<CMD_3_d: begin
-//							next_state = 1<<CMD_3_u;
+//							next_state[CMD_3_u] = 1'b1;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
@@ -244,11 +244,11 @@ always_comb
 //			1<<CMD_3_u: begin
 //							cmd_lcd_wr = 1;
 //							
-//							next_state = 1<<CMD_4_d;
+//							next_state[CMD_4_d] = 1'b1;
 //						 end
 //						 
 //			1<<CMD_4_d: begin
-//							next_state = 1<<CMD_4_u;
+//							next_state[CMD_4_u] = 1'b1;
 //							add_next = 1;
 //							cmd_lcd_wr = 0;
 //						 end
@@ -256,7 +256,7 @@ always_comb
 //			1<<CMD_4_u: begin
 //							cmd_lcd_wr = 1;
 //							//add_next = 1;
-//							next_state = 1<<DELAY_1;
+//							next_state[DELAY_1] = 1'b1;
 //							count_start = 1;
 //						 end
 						 
@@ -265,16 +265,16 @@ always_comb
 			1<<DELAY_1: begin
 							//lcd_d_c = 1;
 							if (count != 3000000) begin
-								next_state = 1<<DELAY_1;
+								next_state[DELAY_1] = 1'b1;
 								cmd_lcd_d_c = 1;
 								end
 							else begin
-								next_state = 1<<CMD_5_d;
+								next_state[CMD_5_d] = 1'b1;
 								
 							end
 						end
 			1<<CMD_5_d: begin
-							next_state = 1<<CMD_5_u;
+							next_state[CMD_5_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
@@ -282,11 +282,11 @@ always_comb
 			1<<CMD_5_u: begin
 							cmd_lcd_wr = 1;
 							
-							next_state = 1<<CMD_6_d;
+							next_state[CMD_6_d] = 1'b1;
 						 end
 						 
 			1<<CMD_6_d: begin
-							next_state = 1<<CMD_6_u;
+							next_state[CMD_6_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						 end
@@ -294,17 +294,17 @@ always_comb
 			1<<CMD_6_u: begin
 							cmd_lcd_wr = 1;
 							//add_next = 1;
-							next_state = 1<<DELAY_2;
+							next_state[DELAY_2] = 1'b1;
 							count_start = 1;
 						 end
 			
 			1<<DELAY_2: begin
 							cmd_lcd_d_c = 1;
 							if (count != 3000000) begin
-								next_state = 1<<DELAY_2;
+								next_state[DELAY_2] = 1'b1;
 								end
 							else begin
-								next_state = 1<<CMD_e_1_d;
+								next_state[CMD_e_1_d] = 1'b1;
 								
 							end
 						end	
@@ -312,7 +312,7 @@ always_comb
 			///////
 			1<<CMD_e_1_d: begin
 							//lcd_d_c = 1;
-							next_state = 1<<CMD_e_1_u;
+							next_state[CMD_e_1_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -321,12 +321,12 @@ always_comb
 							//lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = 1<<CMD_e_2_d;
+							next_state[CMD_e_2_d] = 1'b1;
 						end
 			
 			1<<CMD_e_2_d: begin			
 							//lcd_d_c = 1;
-							next_state = 1<<CMD_e_2_u;
+							next_state[CMD_e_2_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -335,10 +335,10 @@ always_comb
 			
 							cmd_lcd_wr = 1;	
 							if (address != 11'h636) begin
-								next_state = 1<<DATA_e_1_d;
+								next_state[DATA_e_1_d] = 1'b1;
 							end
 							else begin
-								next_state = 1<<RGB_wait;
+								next_state[RGB_wait] = 1'b1;
 								
 								
 							end
@@ -347,7 +347,7 @@ always_comb
 			
 			1<<DATA_e_1_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = 1<<DATA_e_1_u;
+							next_state[DATA_e_1_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -357,12 +357,12 @@ always_comb
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;
 							
-							next_state = 1<<DATA_e_2_d;
+							next_state[DATA_e_2_d] = 1'b1;
 						end
 			
 			1<<DATA_e_2_d: begin
 							cmd_lcd_d_c = 1;
-							next_state = 1<<DATA_e_2_u;
+							next_state[DATA_e_2_u] = 1'b1;
 							add_next = 1;
 							cmd_lcd_wr = 0;
 						end
@@ -371,25 +371,25 @@ always_comb
 							cmd_lcd_d_c = 1;
 							cmd_lcd_wr = 1;	
 							
-							next_state = 1<<CMD_e_1_d;
+							next_state[CMD_e_1_d] = 1'b1;
 
 						 end
 			
 			///////
 				
 			1<<RGB_CMD_1_d: begin
-								next_state = 1<<RGB_CMD_1_u;
+								next_state[RGB_CMD_1_u] = 1'b1;
 								add_next = 1;
 								cmd_lcd_wr = 0;
 							end
 						
 			1<<RGB_CMD_1_u: begin
 								cmd_lcd_wr = 1;
-								next_state = 1<<RGB_CMD_2_d;
+								next_state[RGB_CMD_2_d] = 1'b1;
 							end
 			
 			1<<RGB_CMD_2_d: begin			
-								next_state = 1<<RGB_CMD_2_u;
+								next_state[RGB_CMD_2_u] = 1'b1;
 								cmd_lcd_wr = 0;
 								//add_next = 1;
 							end
@@ -397,12 +397,12 @@ always_comb
 			1<<RGB_CMD_2_u: begin
 			
 							cmd_lcd_wr = 1;	
-							next_state = 1<<RGB_wait;
+							next_state[RGB_wait] = 1'b1;
 						 end		
 			
 			
 			1<<RGB_wait: begin
-							next_state = 1<<RGB_wait;
+							next_state[RGB_wait] = 1'b1;
 							//count_start = 1;
 							rgb_on = 1;
 							cmd_lcd_wr = 0;
@@ -410,7 +410,7 @@ always_comb
 						 
 			default: 
 				begin
-					next_state = 1<<HOLD;
+					next_state[HOLD] = 1'b1;
 				end
 		endcase
 	end
