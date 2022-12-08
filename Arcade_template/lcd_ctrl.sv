@@ -408,6 +408,11 @@ always_comb
 							cmd_lcd_wr = 0;
 						 end
 						 
+			0:
+				begin
+					next_state[HOLD] = 1'b1;
+				end
+
 			default:
 				begin
 					next_state = 'x;
