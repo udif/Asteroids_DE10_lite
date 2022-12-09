@@ -449,82 +449,81 @@ always_ff @(posedge clk_25)
 // RGB state machine
 
 typedef enum int unsigned { 
-	RGB_IDLE,
-	RGB_WAIT_START,
-	RGB_DATA_1_d,
-	RGB_DATA_1_u,
-	RGB_DATA_2_d,
-	RGB_DATA_2_u,
-	RGB_WAIT_NEXT_LINE,
-	STUCK,
-	RGB_WAIT_NEXT_FRAME
-	} rgb_states;
-reg [rgb_states.num()-1:0]rgb_state;
-wire [rgb_states.num()-1:0]rgb_next_state;
-	
+	RGB_IDLE            = `P( 0),
+	RGB_WAIT_START      = `P( 1),
+	RGB_DATA_1_d        = `P( 2),
+	RGB_DATA_1_u        = `P( 3),
+	RGB_DATA_2_d        = `P( 4),
+	RGB_DATA_2_u        = `P( 5),
+	RGB_WAIT_NEXT_LINE  = `P( 6),
+	STUCK               = `P( 7),
+	RGB_WAIT_NEXT_FRAME = `P( 8)
+} rgb_states_t;
+logic [`W(rgb_states_t.num())-1:0]rgb_state, rgb_next_state;
+
 always_comb 
 	begin
-		rgb_next_state = '0;
+		rgb_next_state = RGB_IDLE;
 		rgb_data_1 = 0;
 		rgb_data_2 = 0;
 		rgb_lcd_wr = 1;
 		rgb_lcd_d_c = 0;
-		case(1'b1)
+		case(rgb_state)
 
 			
-			rgb_state[RGB_IDLE]: begin
+			RGB_IDLE: begin
 							
 							if (rgb_on == 1) begin
-								rgb_next_state[RGB_WAIT_START] = 1'b1;
+								rgb_next_state = RGB_WAIT_START;
 								rgb_lcd_wr = 1;
 							end
 							else begin
-									rgb_next_state[RGB_IDLE] = 1'b1;
+									rgb_next_state = RGB_IDLE;
 									rgb_lcd_wr = 0;
 								end
 							end
 					
-			rgb_state[RGB_WAIT_START]: begin
+			RGB_WAIT_START: begin
 									
 									if (first_pixel) begin
 										rgb_lcd_d_c = 1;
-										rgb_next_state[RGB_DATA_1_u] = 1'b1;
+										rgb_next_state = RGB_DATA_1_u;
 										rgb_data_1 = 1;
 										rgb_lcd_wr = 0;
 									end
 									else begin
-										rgb_next_state[RGB_WAIT_START] = 1'b1;
+										rgb_next_state = RGB_WAIT_START;
 										rgb_lcd_wr = 1;
 									end
 								end
 								
-			rgb_state[RGB_DATA_1_d]: begin
+			RGB_DATA_1_d: begin
 							
 							rgb_lcd_d_c = 1;
-							rgb_next_state[RGB_DATA_1_u] = 1'b1;
+							rgb_next_state = RGB_DATA_1_u;
 							rgb_data_1 = 1;
 							rgb_lcd_wr = 0;
 							//add_next = 1;
 							
 						end
 						
-			rgb_state[RGB_DATA_1_u]: begin
+			RGB_DATA_1_u: begin
 							
 							rgb_lcd_d_c = 1;
 							rgb_lcd_wr = 1;
 							rgb_data_1 = 1;
-							rgb_next_state[RGB_DATA_2_d] = 1'b1;
+							rgb_next_state = RGB_DATA_2_d;
 						end
 			
-			rgb_state[RGB_DATA_2_d]: begin
+			RGB_DATA_2_d: begin
 							rgb_lcd_d_c = 1;
-							rgb_next_state[RGB_DATA_2_u] = 1'b1;
+							rgb_next_state = RGB_DATA_2_u;
 							rgb_data_2 = 1;
 							rgb_lcd_wr = 0;
 							//add_next = 1;
 						end
 			
-			rgb_state[RGB_DATA_2_u]: begin
+			RGB_DATA_2_u: begin
 								rgb_lcd_d_c = 1;
 								rgb_lcd_wr = 1;	
 								rgb_data_2 = 1;
@@ -532,47 +531,47 @@ always_comb
 								
 							
 								if (last_pixel) begin
-									rgb_next_state[RGB_WAIT_NEXT_FRAME] = 1'b1;
+									rgb_next_state = RGB_WAIT_NEXT_FRAME;
 								end
 								else if (last_line == 1) begin
-									rgb_next_state[RGB_WAIT_NEXT_LINE] = 1'b1;
+									rgb_next_state = RGB_WAIT_NEXT_LINE;
 								end
 								else begin
-									rgb_next_state[RGB_DATA_1_d] = 1'b1;
+									rgb_next_state = RGB_DATA_1_d;
 								end
 								
 								
 							end
 	
-			rgb_state[RGB_WAIT_NEXT_LINE]: begin
+			RGB_WAIT_NEXT_LINE: begin
 										rgb_lcd_d_c = 1;
 										rgb_data_1 = 1;
 										if (first_line == 1) begin
-												rgb_next_state[RGB_DATA_1_u] = 1'b1;
+												rgb_next_state = RGB_DATA_1_u;
 												rgb_lcd_wr = 0;
 											end
 										else begin
-												rgb_next_state[RGB_WAIT_NEXT_LINE] = 1'b1;
+												rgb_next_state = RGB_WAIT_NEXT_LINE;
 											end
 										end
 										
-			rgb_state[RGB_WAIT_NEXT_FRAME]: begin
+			RGB_WAIT_NEXT_FRAME: begin
 										rgb_lcd_d_c = 1;
 										rgb_data_1 = 1;
 										if (first_pixel) begin
-												rgb_next_state[RGB_DATA_1_u] = 1'b1;
+												rgb_next_state = RGB_DATA_1_u;
 												rgb_lcd_wr = 0;
 											end
 										else begin
-												rgb_next_state[RGB_WAIT_NEXT_FRAME] = 1'b1;
+												rgb_next_state = RGB_WAIT_NEXT_FRAME;
 											end
 										end
 										
-			rgb_state[STUCK]: rgb_next_state[STUCK] = 1'b1;
+			STUCK: rgb_next_state = STUCK;
 			
 			default: 
 				begin
-					rgb_next_state[RGB_IDLE] = 1'b1;
+					rgb_next_state = RGB_IDLE;
 				end
 				
 		endcase
